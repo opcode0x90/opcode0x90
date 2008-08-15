@@ -32,7 +32,11 @@ public:
     /*
      * operator overloading
      */
-    inline ProcessMemory& operator []( unsigned int address );
+    inline ProcessMemory& operator []( unsigned int address )
+    {
+        // point to the specified address
+        this->address = address; return *this;
+    }
     
     /*
      * get/set functions
@@ -62,7 +66,11 @@ public:
     /*
      * operator overloading
      */
-    ProcessMemory& operator []( unsigned int address );
+    inline ProcessMemory& operator []( unsigned int address )
+    {
+        // pass this to ProcessMemory::operator []
+        return this->Memory.operator []( address );
+    }
     
     /*
      * get/set functions
