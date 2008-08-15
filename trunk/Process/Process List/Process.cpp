@@ -64,6 +64,27 @@ std::wstring ProcessMemory::ReadUnicode( unsigned int length )
     return buffer;
 }
 
+int ProcessMemory::ReadInt( void )
+{
+    int buffer = 0;
+    HANDLE hProcess;
+    
+    // attempt to acquire a read access to the specified process
+    hProcess = OpenProcess( PROCESS_VM_READ, FALSE, Id );
+    
+    if ( hProcess != NULL )
+    {
+        // read the fucking memory
+        ReadProcessMemory( hProcess, (LPCVOID)this->address, &buffer, 4, NULL );
+        
+        // cleanup
+        CloseHandle( hProcess );
+    }
+    
+    // done
+    return buffer;
+}
+
 void ProcessMemory::Write( std::string data )
 {
     HANDLE hProcess;
@@ -98,10 +119,27 @@ void ProcessMemory::WriteUnicode( std::wstring data )
     }
 }
 
+void ProcessMemory::WriteInt( int data )
+{
+    HANDLE hProcess;
+    
+    // attempt to acquire a write access to the specified process
+    hProcess = OpenProcess( PROCESS_VM_WRITE|PROCESS_VM_OPERATION , FALSE, Id );
+    
+    if ( hProcess != NULL )
+    {
+        // write the data into remote process
+        WriteProcessMemory( hProcess, (LPVOID)this->address, &data, 4, NULL );
+        
+        // cleanup
+        CloseHandle( hProcess );
+    }
+}
+
 /*
  * operator overloading
  */
-ProcessMemory& ProcessMemory::operator []( unsigned int address )
+inline ProcessMemory& ProcessMemory::operator []( unsigned int address )
 {
     // point to the specified address
     this->address = address; return *this;
@@ -182,7 +220,7 @@ std::vector<Process> Process::GetProcessesByName( std::wstring processName )
 /*
  * operator overloading
  */
-ProcessMemory& Process::operator []( unsigned int address )
+inline ProcessMemory& Process::operator []( unsigned int address )
 {
     // pass this to ProcessMemory::operator []
     return this->Memory.operator []( address );

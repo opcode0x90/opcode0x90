@@ -24,18 +24,20 @@ public:
      */
     std::string Read( unsigned int length );
     std::wstring ReadUnicode( unsigned int length );
+    int ReadInt( void );
     void Write( std::string data );
     void WriteUnicode( std::wstring data );
+    void WriteInt( int data );
     
     /*
      * operator overloading
      */
-    ProcessMemory& operator []( unsigned int address );
+    inline ProcessMemory& operator []( unsigned int address );
     
     /*
      * get/set functions
      */
-    unsigned int getId( void ) { return this->Id; }
+    inline unsigned int getId( void ) { return this->Id; }
 };
 
 class Process
@@ -65,7 +67,7 @@ public:
     /*
      * get/set functions
      */
-    unsigned int getId( void ) { return this->Id; }
-    std::wstring& getProcessName( void ) { return this->ProcessName; }
-    ProcessMemory& getMemory( void ) { return this->Memory; }
+    inline unsigned int getId( void ) { return this->Id; }
+    inline std::wstring& getProcessName( void ) { return this->ProcessName; }
+    inline ProcessMemory& getMemory( void ) { return this->Memory; }
 };
