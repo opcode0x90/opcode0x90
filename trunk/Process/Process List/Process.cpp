@@ -136,15 +136,6 @@ void ProcessMemory::WriteInt( int data )
     }
 }
 
-/*
- * operator overloading
- */
-inline ProcessMemory& ProcessMemory::operator []( unsigned int address )
-{
-    // point to the specified address
-    this->address = address; return *this;
-}
-
 /******************************************************************/
 
 /*
@@ -215,13 +206,4 @@ std::vector<Process> Process::GetProcessesByName( std::wstring processName )
     }
     
     return v;
-}
-
-/*
- * operator overloading
- */
-inline ProcessMemory& Process::operator []( unsigned int address )
-{
-    // pass this to ProcessMemory::operator []
-    return this->Memory.operator []( address );
 }
