@@ -25,13 +25,13 @@ Partial Class frmMoniter
         Me.Label1 = New System.Windows.Forms.Label
         Me.txtNetwork = New System.Windows.Forms.TextBox
         Me.GroupBox1 = New System.Windows.Forms.GroupBox
+        Me.btnSend = New System.Windows.Forms.Button
+        Me.txtMessage = New System.Windows.Forms.TextBox
         Me.txtConsole = New System.Windows.Forms.TextBox
         Me.btnShutdown = New System.Windows.Forms.Button
-        Me.btnMinimize = New System.Windows.Forms.Button
+        Me.btnHide = New System.Windows.Forms.Button
         Me.btnConnect = New System.Windows.Forms.Button
         Me.btnDisconnect = New System.Windows.Forms.Button
-        Me.txtMessage = New System.Windows.Forms.TextBox
-        Me.btnSend = New System.Windows.Forms.Button
         Me.GroupBox1.SuspendLayout()
         Me.SuspendLayout()
         '
@@ -64,13 +64,33 @@ Partial Class frmMoniter
         Me.GroupBox1.TabStop = False
         Me.GroupBox1.Text = "Console"
         '
+        'btnSend
+        '
+        Me.btnSend.Location = New System.Drawing.Point(415, 167)
+        Me.btnSend.Name = "btnSend"
+        Me.btnSend.Size = New System.Drawing.Size(75, 23)
+        Me.btnSend.TabIndex = 2
+        Me.btnSend.Text = "Send"
+        Me.btnSend.UseVisualStyleBackColor = True
+        '
+        'txtMessage
+        '
+        Me.txtMessage.Location = New System.Drawing.Point(17, 167)
+        Me.txtMessage.Name = "txtMessage"
+        Me.txtMessage.Size = New System.Drawing.Size(392, 20)
+        Me.txtMessage.TabIndex = 1
+        '
         'txtConsole
         '
+        Me.txtConsole.Font = New System.Drawing.Font("Courier New", 8.25!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
         Me.txtConsole.Location = New System.Drawing.Point(17, 19)
         Me.txtConsole.Multiline = True
         Me.txtConsole.Name = "txtConsole"
+        Me.txtConsole.ReadOnly = True
+        Me.txtConsole.ScrollBars = System.Windows.Forms.ScrollBars.Both
         Me.txtConsole.Size = New System.Drawing.Size(473, 142)
         Me.txtConsole.TabIndex = 0
+        Me.txtConsole.WordWrap = False
         '
         'btnShutdown
         '
@@ -81,14 +101,14 @@ Partial Class frmMoniter
         Me.btnShutdown.Text = "Shutdown"
         Me.btnShutdown.UseVisualStyleBackColor = True
         '
-        'btnMinimize
+        'btnHide
         '
-        Me.btnMinimize.Location = New System.Drawing.Point(361, 245)
-        Me.btnMinimize.Name = "btnMinimize"
-        Me.btnMinimize.Size = New System.Drawing.Size(75, 23)
-        Me.btnMinimize.TabIndex = 4
-        Me.btnMinimize.Text = "Minimize"
-        Me.btnMinimize.UseVisualStyleBackColor = True
+        Me.btnHide.Location = New System.Drawing.Point(361, 245)
+        Me.btnHide.Name = "btnHide"
+        Me.btnHide.Size = New System.Drawing.Size(75, 23)
+        Me.btnHide.TabIndex = 4
+        Me.btnHide.Text = "Hide"
+        Me.btnHide.UseVisualStyleBackColor = True
         '
         'btnConnect
         '
@@ -101,28 +121,13 @@ Partial Class frmMoniter
         '
         'btnDisconnect
         '
+        Me.btnDisconnect.Enabled = False
         Me.btnDisconnect.Location = New System.Drawing.Point(93, 245)
         Me.btnDisconnect.Name = "btnDisconnect"
         Me.btnDisconnect.Size = New System.Drawing.Size(75, 23)
         Me.btnDisconnect.TabIndex = 6
         Me.btnDisconnect.Text = "Disconnect"
         Me.btnDisconnect.UseVisualStyleBackColor = True
-        '
-        'txtMessage
-        '
-        Me.txtMessage.Location = New System.Drawing.Point(17, 167)
-        Me.txtMessage.Name = "txtMessage"
-        Me.txtMessage.Size = New System.Drawing.Size(392, 20)
-        Me.txtMessage.TabIndex = 1
-        '
-        'btnSend
-        '
-        Me.btnSend.Location = New System.Drawing.Point(415, 167)
-        Me.btnSend.Name = "btnSend"
-        Me.btnSend.Size = New System.Drawing.Size(75, 23)
-        Me.btnSend.TabIndex = 2
-        Me.btnSend.Text = "Send"
-        Me.btnSend.UseVisualStyleBackColor = True
         '
         'frmMoniter
         '
@@ -132,7 +137,7 @@ Partial Class frmMoniter
         Me.ClientSize = New System.Drawing.Size(529, 277)
         Me.Controls.Add(Me.btnDisconnect)
         Me.Controls.Add(Me.btnConnect)
-        Me.Controls.Add(Me.btnMinimize)
+        Me.Controls.Add(Me.btnHide)
         Me.Controls.Add(Me.btnShutdown)
         Me.Controls.Add(Me.GroupBox1)
         Me.Controls.Add(Me.txtNetwork)
@@ -153,7 +158,7 @@ Partial Class frmMoniter
     Friend WithEvents GroupBox1 As System.Windows.Forms.GroupBox
     Friend WithEvents txtConsole As System.Windows.Forms.TextBox
     Friend WithEvents btnShutdown As System.Windows.Forms.Button
-    Friend WithEvents btnMinimize As System.Windows.Forms.Button
+    Friend WithEvents btnHide As System.Windows.Forms.Button
     Friend WithEvents btnConnect As System.Windows.Forms.Button
     Friend WithEvents btnDisconnect As System.Windows.Forms.Button
     Friend WithEvents btnSend As System.Windows.Forms.Button

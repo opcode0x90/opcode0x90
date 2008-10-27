@@ -14,23 +14,26 @@ Public Class IRC
     Private Writer As StreamWriter
 
     'IRC network variables
-    Private Network As String       'Currently connected IRC network
-    Private UserMask As String      'Our own mask
-    Private Nick As String          'Our nickname
+    Private _Server As String       'Currently connected IRC network
+    Private _Mask As String         'Our own mask
+    Private _Nick As String         'Our nickname
+
+    'Joined channel list
+    Private Channels As Dictionary(Of String, Channel) = New Dictionary(Of String, Channel)
 
     'IRC Events
     Public Event OnConnect(ByVal Server As String)
     Public Event OnDisconnect()
 
-    Public Event OnKick(ByVal Nick As String, ByVal Channel As String, ByVal Reason As String)
-    Public Event OnCTCP(ByVal Nick As String, ByVal CTCP As String, ByVal Params As String)
+    Public Event OnKick(ByVal Mask As String, ByVal Channel As String, ByVal Reason As String)
+    Public Event OnCTCP(ByVal Mask As String, ByVal CTCP As String, ByVal Params As String)
 
-    Public Event OnChannelJoin(ByVal Channel As String)
-    Public Event OnChannelPart(ByVal Channel As String)
-    Public Event OnChannelKick(ByVal Channel As String, ByVal Nick As String, ByVal NickKicked As String, ByVal Reason As String)
-    Public Event OnChannelMessage(ByVal Channel As String, ByVal Nick As String, ByVal Message As String)
-    Public Event OnChannelUserJoin(ByVal Channel As String, ByVal Nick As String)
-    Public Event OnChannelUserPart(ByVal Channel As String, ByVal Nick As String, ByVal Message As String)
+    Public Event OnChannelJoin(ByVal Channel As Channel)
+    Public Event OnChannelPart(ByVal Channel As Channel)
+    Public Event OnChannelKick(ByVal Channel As Channel, ByVal User As User, ByVal Nick As String, ByVal Reason As String)
+    Public Event OnChannelMessage(ByVal Channel As Channel, ByVal User As User, ByVal Message As String)
+    Public Event OnChannelUserJoin(ByVal Channel As Channel, ByVal User As User)
+    Public Event OnChannelUserPart(ByVal Channel As Channel, ByVal User As User, ByVal Message As String)
 
     Public Event OnRawMessage(ByVal Message As String)
     Public Event OnRawServerAnnounce(ByVal FullHeader As String, ByVal Header As String(), ByVal Message As String)
@@ -69,11 +72,11 @@ Public Class IRC
                         'Is this the NOTICE AUTH announce ?
                         If FullHeader.Contains("NOTICE AUTH") Then
                             'This is the network we are connected to
-                            Me.Network = Header(0)
+                            Me._Server = Header(0)
                         End If
 
                         'Is this a server announce ?
-                        If (header(0) = Me.Network) Then
+                        If (Header(0) = Me.Server) Then
                             'Parse the server announce
                             ParseServerAnnounce(FullHeader, Header, Message)
                             RaiseEvent OnRawServerAnnounce(FullHeader, Header, Message)
@@ -107,9 +110,9 @@ Public Class IRC
             Catch ex As IOException
                 'Probably disconnected from the network
 
-            Catch ex As Exception
+                'Catch ex As Exception
                 'Exception occurred
-                RaiseEvent OnException(ex)
+                'RaiseEvent OnException(ex)
 
             End Try
 
@@ -136,7 +139,7 @@ Public Class IRC
                 RaiseEvent OnConnect(Header(0))
             Case "352"
                 'Our user mask
-                Me.UserMask = (Header(2) + "!" + Header(4) + "@" + Header(5))
+                Me._Mask = (Header(2) + "!" + Header(4) + "@" + Header(5))
         End Select
 
     End Sub
@@ -144,6 +147,7 @@ Public Class IRC
     Private Sub ParseUserMessage(ByVal FullHeader As String, ByVal Header As String(), ByVal Message As String)
 
         Dim Pos As Integer
+        Dim Channel As Channel
 
         'Parse user message
         Select Case Header(1).ToUpper
@@ -155,25 +159,47 @@ Public Class IRC
                     RaiseEvent OnCTCP(Header(0), Message.Substring(1, IIf(Pos > 0, Pos - 1, Message.Length - 2)), IIf(Pos > 0, Message.Substring(Pos + 1, Message.Length - Pos - 2), String.Empty))
                 Else
                     'Channel message
-                    RaiseEvent OnChannelMessage(Header(2), Header(0), Message)
+                    Channel = Me.Channels(Header(2))
+                    RaiseEvent OnChannelMessage(Channel, Channel.Users(Header(0)), Message)
                 End If
 
             Case "JOIN"
-                If (Header(0) = Me.UserMask) Then
+                If (Header(0) = Me.Mask) Then
                     'We joined the channel :O
-                    RaiseEvent OnChannelJoin(Message)
+                    Channel = New Channel(Me, Message)
+                    Me.Channels.Add(Message, Channel)
+
+                    'Synchronize the user list
+                    Channel.Sync()
+
+                    'Notify
+                    RaiseEvent OnChannelJoin(Me.Channels(Message))
                 Else
                     'User join
-                    RaiseEvent OnChannelUserJoin(Message, Header(0))
+                    Channel = Me.Channels(Message)
+
+                    'Register this new user
+                    Dim User As User = New User(Me, Header(0))
+                    Channel.Users.Add(Header(0), User)
+
+                    'Notify
+                    RaiseEvent OnChannelUserJoin(Channel, User)
                 End If
 
             Case "PART"
-                If (Header(0) = Me.UserMask) Then
+                If (Header(0) = Me.Mask) Then
                     'We left the channel :(
-                    RaiseEvent OnChannelPart(Header(2))
+                    RaiseEvent OnChannelPart(Me.Channels(Header(2)))
+                    Me.Channels.Remove(Header(2))
                 Else
                     'User leave
-                    RaiseEvent OnChannelUserPart(Header(2), Header(0), Message)
+                    Channel = Me.Channels(Header(2))
+
+                    'Notify
+                    RaiseEvent OnChannelUserPart(Channel, Channel.Users(Header(0)), Message)
+
+                    'Purge the user from our list
+                    Channel.Users.Remove(Header(0))
                 End If
 
             Case "KICK"
@@ -182,12 +208,31 @@ Public Class IRC
                     RaiseEvent OnKick(Header(0), Header(2), Message)
                 Else
                     'Someone else is kicked :]
-                    RaiseEvent OnChannelKick(Header(2), Header(0), Header(3), Message)
+                    Channel = Me.Channels(Header(2))
+                    RaiseEvent OnChannelKick(Channel, Channel.Users(Header(0)), Header(3), Message)
                 End If
 
         End Select
 
     End Sub
+
+    Public ReadOnly Property Nick() As String
+        Get
+            Nick = Me._Nick
+        End Get
+    End Property
+
+    Public ReadOnly Property Mask() As String
+        Get
+            Mask = Me._Mask
+        End Get
+    End Property
+
+    Public ReadOnly Property Server() As String
+        Get
+            Server = Me._Server
+        End Get
+    End Property
 
     Public Sub Connect(ByVal Server As String, ByVal Port As Integer, ByVal Nick As String, ByVal User As String)
 
@@ -204,7 +249,7 @@ Public Class IRC
             Writer = New StreamWriter(Stream)
 
             'Save the info
-            Me.Nick = Nick
+            Me._Nick = Nick
 
             'Initiate the IRC session
             Me.Send("NICK " + Nick)                                             'Assign our nickname
