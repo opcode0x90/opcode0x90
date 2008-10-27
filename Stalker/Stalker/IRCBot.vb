@@ -6,7 +6,7 @@
     Public NickPassword As String = "seriouslysecurepassword"
     Public User As String = "I r stalker"
     Public Channel As String = "#cef"
-    Public LogChannel As String = "#cef-loginfo"
+    Public LogChannel As String = "#emptylog" '"#cef-loginfo"
 
     'IRC client
     Public WithEvents IRC As IRC = New IRC
@@ -21,9 +21,9 @@
         IRC.Disconnect()
     End Sub
 
-    Private Sub IRC_OnChannelMessage(ByVal Channel As String, ByVal Nick As String, ByVal Message As String) Handles IRC.OnChannelMessage
+    Private Sub IRC_OnChannelMessage(ByVal Channel As Channel, ByVal User As User, ByVal Message As String) Handles IRC.OnChannelMessage
         'Listen only message from the log channel
-        If (Channel = Me.LogChannel) Then
+        If (Channel.Name = Me.LogChannel) Then
             'Is this a command ?
             If Message.StartsWith("!") Then
                 'Handle command here
@@ -32,9 +32,9 @@
 
     End Sub
 
-    Private Sub IRC_OnChannelUserJoin(ByVal Channel As String, ByVal Nick As String) Handles IRC.OnChannelUserJoin
+    Private Sub IRC_OnChannelUserJoin(ByVal Channel As Channel, ByVal User As User) Handles IRC.OnChannelUserJoin
         'Log the user join
-        IRC.Message(Me.LogChannel, "Mask: " + Nick)
+        IRC.Message(Me.LogChannel, "Nick: " + User.Nick + " | Mask: " + (User.Ident + "@" + User.Host) + " | User: " + User.User)
     End Sub
 
     Private Sub IRC_OnConnect(ByVal Server As String) Handles IRC.OnConnect
