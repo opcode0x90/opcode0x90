@@ -10,38 +10,38 @@ Public Class Channel
 
     Public Sub New(ByVal IRC As IRC, ByVal Name As String)
         'Attach to the specified network
-        Me._Name = Name
+        _Name = Name
         Me.IRC = IRC
     End Sub
 
     Public ReadOnly Property Name() As String
         Get
-            Name = Me._Name
+            Name = _Name
         End Get
     End Property
 
     Public ReadOnly Property Users() As Dictionary(Of String, User)
         Get
-            Users = Me._Users
+            Users = _Users
         End Get
     End Property
 
     Public Sub Part(Optional ByVal Reason As String = "")
         'Leave this channel
-        IRC.ChannelPart(Me.Name, Reason)
+        IRC.ChannelPart(Name, Reason)
     End Sub
 
     Public Sub Sync()
         'Purge the old userlist
-        Me.Users.Clear()
+        Users.Clear()
 
         'Synchronize the user list
-        IRC.Send("WHO " + Me.Name)
+        IRC.Send("WHO " + Name)
     End Sub
 
     Private Sub IRC_OnRawServerAnnounce(ByVal FullHeader As String, ByVal Header() As String, ByVal Message As String) Handles IRC.OnRawServerAnnounce
         'Is this a /WHO list ?
-        If Header(1) = "352" And Header(3) = Me.Name Then
+        If Header(1) = "352" And Header(3) = Name Then
 
             Dim Mask As String
             Dim User As String
@@ -52,9 +52,10 @@ Public Class Channel
             Mode = Header(8)
             User = Message.Substring(2)
 
-            'Add this user into the list
-            Me.Users.Add(Mask, New User(Me.IRC, Mask, User, Mode))
-
+            If Not Users.ContainsKey(Mask) Then
+                'Add this user into the list
+                Users.Add(Mask, New User(IRC, Mask, User, Mode))
+            End If
         End If
 
     End Sub

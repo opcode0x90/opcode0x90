@@ -5,7 +5,7 @@
     Public Nick As String = "noppy"
     Public NickPassword As String = "seriouslysecurepassword"
     Public User As String = "I r stalker"
-    Public Channel As String = "#cef"
+    Public Channel As String = "#baw"
     Public LogChannel As String = "#emptylog" '"#cef-loginfo"
 
     'IRC client
@@ -13,7 +13,7 @@
 
     Public Sub Connect()
         'Connect to the IRC network
-        IRC.Connect(Me.Network, Me.Port, Me.Nick, Me.User)
+        IRC.Connect(Network, Port, Nick, User)
     End Sub
 
     Public Sub Disconnect()
@@ -21,9 +21,15 @@
         IRC.Disconnect()
     End Sub
 
+    Private Sub IRC_OnChannelKick(ByVal Channel As Channel, ByVal User As User, ByVal Nick As String, ByVal Reason As String) Handles IRC.OnChannelKick
+        'Who kick mah ass ? >:|
+        IRC.ChannelJoin(Channel.Name)
+        IRC.Message(Channel.Name, "Who kick mah ass >:|")
+    End Sub
+
     Private Sub IRC_OnChannelMessage(ByVal Channel As Channel, ByVal User As User, ByVal Message As String) Handles IRC.OnChannelMessage
         'Listen only message from the log channel
-        If (Channel.Name = Me.LogChannel) Then
+        If (Channel.Name = LogChannel) Then
             'Is this a command ?
             If Message.StartsWith("!") Then
                 'Handle command here
@@ -34,37 +40,31 @@
 
     Private Sub IRC_OnChannelUserJoin(ByVal Channel As Channel, ByVal User As User) Handles IRC.OnChannelUserJoin
         'Log the user join
-        IRC.Message(Me.LogChannel, "Nick: " + User.Nick + " | Mask: " + (User.Ident + "@" + User.Host) + " | User: " + User.User)
+        IRC.Message(LogChannel, "Nick: " + User.Nick + " | Mask: " + (User.Ident + "@" + User.Host) + " | Real Name: " + User.RealName)
     End Sub
 
     Private Sub IRC_OnConnect(ByVal Server As String) Handles IRC.OnConnect
         'Identify
-        IRC.Identify(Me.NickPassword)
+        IRC.Identify(NickPassword)
 
         'Autojoin channel
-        IRC.ChannelJoin(Me.Channel)
-        IRC.ChannelJoin(Me.LogChannel)
+        IRC.ChannelJoin(Channel)
+        IRC.ChannelJoin(LogChannel)
     End Sub
 
-    Private Sub IRC_OnCTCP(ByVal Nick As String, ByVal CTCP As String, ByVal Params As String) Handles IRC.OnCTCP
+    Private Sub IRC_OnCTCP(ByVal User As User, ByVal CTCP As String, ByVal Params As String) Handles IRC.OnCTCP
         'Debug
-        IRC.Message(Me.LogChannel, "Received CTCP " + CTCP + IIf(String.IsNullOrEmpty(Params), String.Empty, (" " + Params)) + " from " + Nick)
+        IRC.Message(LogChannel, "Received CTCP " + CTCP + IIf(String.IsNullOrEmpty(Params), String.Empty, (" " + Params)) + " from " + User.Mask)
 
         Select Case CTCP.ToUpper
             Case "PING"
                 'Pong
-                IRC.Notify(Nick, "PING " + Params)
+                IRC.NCTCP(User.Nick, "PING", Params)
             Case "VERSION"
                 'I r stalker
-                IRC.Notify(Nick, "VERSION StalkerBot")
+                IRC.NCTCP(User.Nick, "VERSION", "StalkerBot")
         End Select
 
-    End Sub
-
-    Private Sub IRC_OnKick(ByVal Nick As String, ByVal Channel As String, ByVal Reason As String) Handles IRC.OnKick
-        'Who kick mah ass ? >:|
-        IRC.ChannelJoin(Channel)
-        IRC.Message(Channel, "Who kick mah ass >:|")
     End Sub
 
 End Class

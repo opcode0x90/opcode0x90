@@ -31,7 +31,7 @@
             Dim callback As _PrintConsole = New _PrintConsole(AddressOf PrintConsole)
 
             'Invoke the callback
-            Me.Invoke(callback, New Object() {Text})
+            Invoke(callback, New Object() {Text})
         Else
             'Print the text to console
             txtConsole.AppendText(Text & vbCrLf)
@@ -79,23 +79,23 @@
     End Sub
 
     Private Sub IRC_OnConnect(ByVal Server As String) Handles IRC.OnConnect
-        If Me.InvokeRequired Then
+        If InvokeRequired Then
             'Connected to the IRC network
             Dim callback As _Connected = New _Connected(AddressOf Connected)
-            Me.Invoke(callback, New Object() {Server})
+            Invoke(callback, New Object() {Server})
         End If
     End Sub
 
-    Private Sub IRC_OnCTCP(ByVal Nick As String, ByVal CTCP As String, ByVal Params As String) Handles IRC.OnCTCP
+    Private Sub IRC_OnCTCP(ByVal User As User, ByVal CTCP As String, ByVal Params As String) Handles IRC.OnCTCP
         'Received some annoying CTCP
-        PrintConsole("Received CTCP " & CTCP & " from user " & Nick)
+        PrintConsole("Received CTCP " & CTCP & " from user " & User.Nick)
     End Sub
 
     Private Sub IRC_OnDisconnect() Handles IRC.OnDisconnect
-        If Me.InvokeRequired Then
+        If InvokeRequired Then
             'Disconnected from the IRC network
             Dim callback As _Disconnected = New _Disconnected(AddressOf Disconnected)
-            Me.Invoke(callback)
+            Invoke(callback)
         End If
     End Sub
 
