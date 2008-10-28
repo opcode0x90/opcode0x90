@@ -3,8 +3,8 @@ Public Class User
 
     'User fields
     Private _Mask As String
-    Private _User As String
     Private _Mode As String
+    Private _RealName As String
 
     Private _Nick As String         'Extracted from _Mask
     Private _Ident As String        'Extracted from _Mask
@@ -22,15 +22,15 @@ Public Class User
         Me.Mask = Mask
 
         'Synchronize the user info
-        Me.Sync()
+        SyncNonAsync()
 
     End Sub
 
-    Public Sub New(ByVal IRC As IRC, ByVal Mask As String, ByVal User As String, ByVal Mode As String)
+    Public Sub New(ByVal IRC As IRC, ByVal Mask As String, ByVal RealName As String, ByVal Mode As String)
         'Initialize this user
         Me.IRC = IRC
         Me.Mask = Mask
-        Me._User = User
+        Me._RealName = RealName
         Me.Mode = Mode
         Me.IsSync = True
     End Sub
@@ -76,9 +76,9 @@ Public Class User
         End Set
     End Property
 
-    Public ReadOnly Property User() As String
+    Public ReadOnly Property RealName() As String
         Get
-            User = Me._User
+            RealName = Me._RealName
         End Get
     End Property
 
@@ -105,13 +105,26 @@ Public Class User
         IRC.Send("WHO " + Me.Nick)
     End Sub
 
+    Public Sub SyncNonAsync()
+        'Synchronize the user info
+        Me.IsSync = False
+        Me.Sync()
+
+        'Wait until the user info is synchronized
+        While Not Me.IsSync
+            'Keep polling for message
+            IRC.Poll()
+        End While
+
+    End Sub
+
     Private Sub IRC_OnRawServerAnnounce(ByVal FullHeader As String, ByVal Header() As String, ByVal Message As String) Handles IRC.OnRawServerAnnounce
         'Is this a /WHO list ?
         If Header(1) = "352" Then
             If Header(4) = Me.Ident And Header(5) = Me.Host And Header(7) = Me.Nick Then
                 'Grab the user string and mode
                 Me.Mode = Header(8)
-                Me._User = Message.Substring(2)
+                Me._RealName = Message.Substring(2)
 
                 'Synchronized
                 Me.IsSync = True
