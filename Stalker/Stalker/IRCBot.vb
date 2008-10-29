@@ -10,8 +10,8 @@ Public Class IRCBot
     Public Nick As String = "noppy"
     Public NickPassword As String = "seriouslysecurepassword"
     Public User As String = "I r stalker"
-    Public Channel As String = "#random"
-    Public LogChannel As String = "#random2"
+    Public Channel As String = "#cef"
+    Public LogChannel As String = "#cef-loginfo"
 
     'MySQL database variables
     Public DataSource As String = "localhost"
@@ -196,6 +196,8 @@ Public Class IRCBot
         Dim RCount As Integer = 0
         Dim Result As MySqlDataReader
 
+        Dim Entry As String = String.Empty
+
         'Listen only message from the log channel
         If (Channel.Name = LogChannel) Then
             'Is this a command ?
@@ -205,9 +207,6 @@ Public Class IRCBot
 
                 Select Case Command(0).ToLower
                     Case "xref", "x"
-
-                        Dim Entry As String = String.Empty
-
                         'Nick name cross reference
                         Select Case Command(1).ToLower
                             Case "nick", "n" : Entry = "Nick"
@@ -218,7 +217,7 @@ Public Class IRCBot
 
                         If Not String.IsNullOrEmpty(Entry) Then
                             'Cross reference by nick
-                            Result = ExecuteReader("SELECT * FROM users WHERE " & Entry & " = @1", Command(2))
+                            Result = ExecuteReader("SELECT * FROM users WHERE " & Entry & " LIKE @1", String.Join(" ", Command, 2, Command.Length - 2).Replace("*", "%"))
 
                             'Dump out the results
                             While Result.Read
@@ -242,10 +241,30 @@ Public Class IRCBot
                     Case "db"
                         'Database related commands
                         Select Case Command(1).ToLower
-                            Case "count"
+                            Case "count", "c"
                                 'Nickname entries count
                                 Count = ExecuteScalar("SELECT Count(*) FROM users")
                                 Channel.Message("Current nickname entries: " & Count)
+
+                            Case "remove"
+                                If Command.Length >= 2 Then
+                                    'Remove the specified entry from the database
+                                    Select Case Command(1).ToLower
+                                        Case "nick", "n" : Entry = "Nick"
+                                        Case "ident", "i" : Entry = "Identd"
+                                        Case "host", "h" : Entry = "Host"
+                                        Case "name", "u" : Entry = "RealName"
+                                    End Select
+
+                                    If Not String.IsNullOrEmpty(Entry) Then
+                                        'Report how many entries will be removed
+                                        Count = ExecuteScalar("SELECT Count(*) FROM users WHERE " & Entry & " LIKE @1", String.Join(" ", Command, 2, Command.Length - 2).Replace("*", "%"))
+                                        Channel.Message("Database entries removed: " & Count)
+
+                                        'Now remove it for real
+                                        ExecuteNonQuery("DELETE FROM users WHERE " & Entry & " = @1", String.Join(" ", Command, 2, Command.Length - 2))
+                                    End If
+                                End If
 
                             Case "cleanup"
                                 'Cleanup the database
