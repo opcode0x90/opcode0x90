@@ -59,9 +59,9 @@ Public Class IRC
             Catch ex As IOException
                 'Probably disconnected from the network
 
-            Catch ex As Exception
+                'Catch ex As Exception
                 'Exception occurred
-                RaiseEvent OnException(ex)
+                '   RaiseEvent OnException(ex)
 
             End Try
 
@@ -179,6 +179,7 @@ Public Class IRC
                         Else
                             'Unknown user
                             User = New User(Me, Header(0))
+                            Channel.Users.Add(Header(0), User)
                         End If
 
                         RaiseEvent OnChannelMessage(Channel, User, Message)
