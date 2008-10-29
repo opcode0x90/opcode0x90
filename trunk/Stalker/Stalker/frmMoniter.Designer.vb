@@ -131,24 +131,24 @@ Partial Class frmMoniter
         '
         Me.TrayContextMenu.Items.AddRange(New System.Windows.Forms.ToolStripItem() {Me.ShowToolStripMenuItem, Me.ToolStripMenuItem1, Me.ShutdownToolStripMenuItem})
         Me.TrayContextMenu.Name = "ContextMenu"
-        Me.TrayContextMenu.Size = New System.Drawing.Size(153, 76)
+        Me.TrayContextMenu.Size = New System.Drawing.Size(123, 54)
         Me.TrayContextMenu.Text = "StalkerBot"
         '
         'ShowToolStripMenuItem
         '
         Me.ShowToolStripMenuItem.Name = "ShowToolStripMenuItem"
-        Me.ShowToolStripMenuItem.Size = New System.Drawing.Size(152, 22)
+        Me.ShowToolStripMenuItem.Size = New System.Drawing.Size(122, 22)
         Me.ShowToolStripMenuItem.Text = "S&how"
         '
         'ToolStripMenuItem1
         '
         Me.ToolStripMenuItem1.Name = "ToolStripMenuItem1"
-        Me.ToolStripMenuItem1.Size = New System.Drawing.Size(149, 6)
+        Me.ToolStripMenuItem1.Size = New System.Drawing.Size(119, 6)
         '
         'ShutdownToolStripMenuItem
         '
         Me.ShutdownToolStripMenuItem.Name = "ShutdownToolStripMenuItem"
-        Me.ShutdownToolStripMenuItem.Size = New System.Drawing.Size(152, 22)
+        Me.ShutdownToolStripMenuItem.Size = New System.Drawing.Size(122, 22)
         Me.ShutdownToolStripMenuItem.Text = "&Shutdown"
         '
         'frmMoniter

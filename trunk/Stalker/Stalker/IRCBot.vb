@@ -65,6 +65,7 @@ Public Class IRCBot
             SQL.ExecuteNonQuery()
 
             'Connect to the IRC network
+            Randomize()
             IRC.Connect(Network, Port, (Nick + Hex(Int(Rnd() * 1000))), User)
 
             'Done
@@ -198,7 +199,7 @@ Public Class IRCBot
 
                             Case "cleanup"
                                 'Cleanup the database
-
+                                Channel.Message("*** Cleaning up database")
 
                         End Select
 
