@@ -197,6 +197,12 @@ Public Class IRC
                     'Notify
                     RaiseEvent OnJoin(Channels(Message))
                 Else
+                    'HACK: a hack to workaround a very wierd bug on Safko's box
+                    If Not Channels.ContainsKey(Message) Then
+                        Channel = New Channel(Me, Message)
+                        Channels.Add(Message, Channel)
+                    End If
+
                     'User join
                     Channel = Channels(Message)
 

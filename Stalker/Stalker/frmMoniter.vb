@@ -46,7 +46,7 @@
         NotifyIcon.ShowBalloonTip(5000, "StalkerBot", "Exception occurred", ToolTipIcon.Error)
     End Sub
 
-    Private Sub PrintConsole(ByVal Text As String)
+    Public Sub PrintConsole(ByVal Text As String)
         'Is this a cross-thread call ?
         If txtConsole.InvokeRequired Then
             Dim callback As _PrintConsole = New _PrintConsole(AddressOf PrintConsole)
