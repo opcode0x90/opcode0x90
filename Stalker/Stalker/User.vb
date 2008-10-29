@@ -7,7 +7,7 @@ Public Class User
     Private _RealName As String
 
     Private _Nick As String         'Extracted from _Mask
-    Private _Ident As String        'Extracted from _Mask
+    Private _Identd As String       'Extracted from _Mask
     Private _Host As String         'Extracted from _Mask
     Private _Prefix As String       'Extracted from _Mode
 
@@ -35,10 +35,16 @@ Public Class User
         Me.IsSync = True
     End Sub
 
-    Public ReadOnly Property Nick() As String
+    Public Property Nick() As String
         Get
             Nick = Me._Nick
         End Get
+        Set(ByVal value As String)
+            'We changed our nick
+            _Mask = Mask.Remove(0, _Nick.Length)
+            _Mask = Mask.Insert(0, value)
+            _Nick = value
+        End Set
     End Property
 
     Public Property Mask() As String
@@ -52,7 +58,7 @@ Public Class User
             Dim Slice As String() = Me.Mask.Split(Separator, 3)
 
             Me._Nick = Slice(0)
-            Me._Ident = Slice(1)
+            Me._Identd = Slice(1)
             Me._Host = Slice(2)
 
         End Set
@@ -88,9 +94,9 @@ Public Class User
         End Get
     End Property
 
-    Public ReadOnly Property Ident() As String
+    Public ReadOnly Property Identd() As String
         Get
-            Ident = Me._Ident
+            Identd = Me._Identd
         End Get
     End Property
 
@@ -121,7 +127,7 @@ Public Class User
     Private Sub IRC_OnRawServerAnnounce(ByVal FullHeader As String, ByVal Header() As String, ByVal Message As String) Handles IRC.OnRawServerAnnounce
         'Is this a /WHO list ?
         If Header(1) = "352" Then
-            If Header(4) = Me.Ident And Header(5) = Me.Host And Header(7) = Me.Nick Then
+            If Header(4) = Me.Identd And Header(5) = Me.Host And Header(7) = Me.Nick Then
                 'Grab the user string and mode
                 Me.Mode = Header(8)
                 Me._RealName = Message.Substring(2)

@@ -20,7 +20,7 @@ Public Class IRC
 
     Private Reason As String
 
-    'Joined channel list
+    'Joined channel and tracked user list
     Private Channels As Dictionary(Of String, Channel) = New Dictionary(Of String, Channel)
 
     'IRC Events
@@ -38,6 +38,7 @@ Public Class IRC
     Public Event OnChannelUserPart(ByVal Channel As Channel, ByVal User As User, ByVal Message As String)
 
     Public Event OnRawMessage(ByVal Message As String)
+    Public Event OnRawMessageSent(ByVal Message As String)
     Public Event OnRawServerAnnounce(ByVal FullHeader As String, ByVal Header As String(), ByVal Message As String)
     Public Event OnRawUserMessage(ByVal FullHeader As String, ByVal Header As String(), ByVal Message As String)
 
@@ -90,9 +91,6 @@ Public Class IRC
 
         'Notify there is event happening on the network
         RaiseEvent OnRawMessage(Buffer)
-
-        'Debug
-        Debug.Print(Buffer)
 
         If Buffer.StartsWith(":") Then
             'Extract the message header and body
@@ -159,6 +157,7 @@ Public Class IRC
 
         Dim Pos As Integer
         Dim Channel As Channel
+        Dim User As User
 
         'Parse user message
         Select Case Header(1).ToUpper
@@ -167,13 +166,21 @@ Public Class IRC
                 If Message.StartsWith(Chr(1)) And Message.EndsWith(Chr(1)) Then
                     'CTCP
                     Pos = Message.IndexOf(" ")
-                    Dim User As User = New User(Me, Header(0))
+                    User = New User(Me, Header(0))
                     RaiseEvent OnCTCP(User, Message.Substring(1, IIf(Pos > 0, Pos - 1, Message.Length - 2)), IIf(Pos > 0, Message.Substring(Pos + 1, Message.Length - Pos - 2), String.Empty))
                 Else
                     'Channel message
                     If Channels.ContainsKey(Header(2)) Then
                         Channel = Channels(Header(2))
-                        RaiseEvent OnChannelMessage(Channel, Channel.Users(Header(0)), Message)
+
+                        If Channel.Users.ContainsKey(Header(0)) Then
+                            User = Channel.Users(Header(0))
+                        Else
+                            'Unknown user
+                            User = New User(Me, Header(0))
+                        End If
+
+                        RaiseEvent OnChannelMessage(Channel, User, Message)
                     End If
                 End If
 
@@ -193,7 +200,7 @@ Public Class IRC
                     Channel = Channels(Message)
 
                     'Register this new user
-                    Dim User As User = New User(Me, Header(0))
+                    User = New User(Me, Header(0))
 
                     If Not Channel.Users.ContainsKey(Header(0)) Then
                         'Add user to channel
@@ -205,32 +212,57 @@ Public Class IRC
                 End If
 
             Case "PART"
-                    If (Header(0) = Mask) Then
-                        'We left the channel :(
-                        RaiseEvent OnChannelPart(Channels(Header(2)))
-                        Channels.Remove(Header(2))
-                    Else
-                        'User leave
-                        Channel = Channels(Header(2))
+                If (Header(0) = Mask) Then
+                    'We left the channel :(
+                    RaiseEvent OnChannelPart(Channels(Header(2)))
+                    Channels.Remove(Header(2))
+                Else
+                    'User leave
+                    Channel = Channels(Header(2))
 
-                        'Notify
-                        RaiseEvent OnChannelUserPart(Channel, Channel.Users(Header(0)), Message)
+                    'Notify
+                    RaiseEvent OnChannelUserPart(Channel, Channel.Users(Header(0)), Message)
 
-                        'Purge the user from our list
-                        Channel.Users.Remove(Header(0))
-                    End If
+                    'Purge the user from our list
+                    Channel.Users.Remove(Header(0))
+                End If
 
             Case "KICK"
-                    If (Header(3) = Nick) Then
+                If (Header(3) = Nick) Then
                     'Our ass is kicked >:|
                     Channel = Channels(Header(2))
                     RaiseEvent OnKick(Channel.Users(Header(0)), Channel, Message)
-                        Channels.Remove(Header(2))
-                    Else
-                        'Someone else is kicked :]
-                        Channel = Channels(Header(2))
-                        RaiseEvent OnChannelKick(Channel, Channel.Users(Header(0)), Header(3), Message)
-                    End If
+                    Channels.Remove(Header(2))
+                Else
+                    'Someone else is kicked :]
+                    Channel = Channels(Header(2))
+                    RaiseEvent OnChannelKick(Channel, Channel.Users(Header(0)), Header(3), Message)
+                End If
+
+            Case "NICK"
+                If (Header(0) = Mask) Then
+                    'We changed our nick
+                    _Mask = Mask.Remove(0, Nick.Length)
+                    _Mask = Mask.Insert(0, Message)
+                    _Nick = Message
+                Else
+                    'Someone else changed their nick
+                    Dim Pair As KeyValuePair(Of String, Channel)
+
+                    For Each Pair In Channels
+                        'Resolve the channel
+                        Channel = Pair.Value
+
+                        'Where are you ~
+                        If Channel.Users.ContainsKey(Mask) Then
+                            'Found ya
+                            User = Channel.Users(Mask)
+
+                            'Update the nick
+                            User.Nick = Message
+                        End If
+                    Next
+                End If
 
         End Select
 
@@ -311,8 +343,8 @@ Public Class IRC
         Writer.WriteLine(Data)
         Writer.Flush()
 
-        'Debug
-        Debug.Print(Data + vbCrLf)
+        'Notify
+        RaiseEvent OnRawMessageSent(Data)
     End Sub
 
     Public Sub CTCP(ByVal Target As String, ByVal CTCP As String, Optional ByVal Params As String = "")
@@ -335,9 +367,19 @@ Public Class IRC
         Send("NOTICE " + Target + " :" + Message)
     End Sub
 
+    Public Sub SetNick(ByVal Nick As String)
+        'Change to specified nick
+        Send("NICK " + Nick)
+    End Sub
+
     Public Sub Identify(ByVal Password As String)
         'Identify
         Message("NICKSERV", "IDENTIFY " + Password)
+    End Sub
+
+    Public Sub Ghost(ByVal Nick As String, ByVal Password As String)
+        'Ghost the specified nick
+        Message("NICKSERV", "GHOST " + Nick + " " + Password)
     End Sub
 
     Public Sub ChannelJoin(ByVal Channel As String)
