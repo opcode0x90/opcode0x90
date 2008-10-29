@@ -1,4 +1,5 @@
 ﻿Imports MySql.Data.MySqlClient
+Imports System.Data
 Imports System.Text.RegularExpressions
 
 Public Class IRCBot
@@ -9,8 +10,8 @@ Public Class IRCBot
     Public Nick As String = "noppy"
     Public NickPassword As String = "seriouslysecurepassword"
     Public User As String = "I r stalker"
-    Public Channel As String = "#cef"
-    Public LogChannel As String = "#cef-loginfo"
+    Public Channel As String = "#random"
+    Public LogChannel As String = "#random2"
 
     'MySQL database variables
     Public DataSource As String = "localhost"
@@ -22,10 +23,9 @@ Public Class IRCBot
     Public WithEvents IRC As IRC = New IRC
 
     'MySQL Database Connection
-    Private MySQL As MySqlConnection = New MySqlConnection("Data Source=" + DataSource + _
-                                                           ";User ID=" + UserID + _
-                                                           ";Password=" + Password + _
-                                                           ";")
+    Private MySQL As MySqlConnection = New MySqlConnection("Data Source=" + DataSource + ";" + _
+                                                           "User ID=" + UserID + ";" + _
+                                                           "Password=" + Password + ";")
 
     'IRCBot exceptions
     Public Event OnException(ByVal ex As Exception)
@@ -39,34 +39,108 @@ Public Class IRCBot
         Return Host
     End Function
 
+    Private Function ExecuteScalar(ByVal CommandText As String, ByVal ParamArray Parameters As Object()) As Object
+
+        Dim Command As MySqlCommand = MySQL.CreateCommand()
+        Dim i As Integer
+
+        'Prepare the query
+        Command.CommandText = CommandText
+
+        'Fill in the parameters
+        For i = 0 To Parameters.GetUpperBound(0)
+            Command.Parameters.AddWithValue("@" & (i + 1), Parameters(i))
+        Next
+
+        'Return the result
+        Return Command.ExecuteScalar
+
+    End Function
+
+    Private Sub ExecuteNonQuery(ByVal CommandText As String, ByVal ParamArray Parameters As Object())
+
+        Dim Command As MySqlCommand = MySQL.CreateCommand
+        Dim i As Integer
+
+        'Prepare the query
+        Command.CommandText = CommandText
+
+        'Fill in the parameters
+        For i = 0 To Parameters.GetUpperBound(0)
+            Command.Parameters.AddWithValue("@" & (i + 1), Parameters(i))
+        Next
+
+        'Execute the command
+        Command.ExecuteNonQuery()
+
+    End Sub
+
+    Private Function ExecuteReader(ByVal CommandText As String, ByVal ParamArray Parameters As Object()) As MySqlDataReader
+
+        Dim Command As MySqlCommand = MySQL.CreateCommand
+        Dim i As Integer
+
+        'Prepare the query
+        Command.CommandText = CommandText
+
+        'Fill in the parameters
+        For i = 0 To Parameters.GetUpperBound(0)
+            Command.Parameters.AddWithValue("@" & (i + 1), Parameters(i))
+        Next
+
+        'Return the result
+        Return Command.ExecuteReader
+
+    End Function
+
+    Private Function ExecuteDataSet(ByVal CommandText As String, ByVal ParamArray Parameters As Object()) As DataSet
+
+        Dim Command As MySqlCommand = MySQL.CreateCommand
+
+        Dim Adapter As MySqlDataAdapter
+        Dim DataSet As DataSet = New DataSet
+
+        'Prepare the query
+        Command.CommandText = CommandText
+
+        'Fill in the parameters
+        For i = 0 To Parameters.GetUpperBound(0)
+            Command.Parameters.AddWithValue("@" & (i + 1), Parameters(i))
+        Next
+
+        'Prepare the adapter
+        Adapter = New MySqlDataAdapter(Command)
+
+        'Populate the data set
+        Adapter.Fill(DataSet)
+
+        'Done
+        Return DataSet
+
+    End Function
+
     Public Function Start() As Boolean
 
         Try
-            Dim SQL As MySqlCommand
-
             'Connect to localhost MySQL database
             MySQL.Open()
-            SQL = MySQL.CreateCommand()
 
             'Create our database
-            SQL.CommandText = "CREATE DATABASE IF NOT EXISTS " + Database + ";"
-            SQL.ExecuteNonQuery()
+            ExecuteNonQuery("CREATE DATABASE IF NOT EXISTS " + Database + ";")
             MySQL.ChangeDatabase(Database)
 
             'Generate the layout for our database
-            SQL.CommandText = "CREATE TABLE IF NOT EXISTS `users` (" + _
-                                   "`Index` INTEGER UNSIGNED NOT NULL AUTO_INCREMENT," + _
-                                   "`Nick` VARCHAR(45) NOT NULL," + _
-                                   "`Identd` VARCHAR(45) NOT NULL," + _
-                                   "`Host` VARCHAR(45) NOT NULL," + _
-                                   "`RealName` VARCHAR(45) NOT NULL," + _
-                                   "PRIMARY KEY (`Index`)" + _
-                               ");"
-            SQL.ExecuteNonQuery()
+            ExecuteNonQuery("CREATE TABLE IF NOT EXISTS `users` (" + _
+                                "`Index` INTEGER UNSIGNED NOT NULL AUTO_INCREMENT," + _
+                                "`Nick` VARCHAR(45) NOT NULL," + _
+                                "`Identd` VARCHAR(45) NOT NULL," + _
+                                "`Host` VARCHAR(45) NOT NULL," + _
+                                "`RealName` VARCHAR(45) NOT NULL," + _
+                                "PRIMARY KEY (`Index`)" + _
+                            ");")
 
             'Connect to the IRC network
-            Randomize()
-            IRC.Connect(Network, Port, (Nick + Hex(Int(Rnd() * 1000))), User)
+            IRC.Connect(Network, Port, Nick, User)
 
             'Done
             Return True
@@ -92,32 +166,13 @@ Public Class IRCBot
         Dim Count As Integer = 0
 
         'Lookup for all the related entries
-        SQL.CommandText = "SELECT Count(*) FROM users WHERE Nick = @Nick AND Identd = @Identd AND Host = @Host AND RealName = @RealName;"
-        SQL.Parameters.AddWithValue("@Nick", User.Nick)
-        SQL.Parameters.AddWithValue("@Identd", User.Identd)
-        SQL.Parameters.AddWithValue("@Host", TruncateHost(User.Host))
-        SQL.Parameters.AddWithValue("@RealName", User.RealName)
-
-        'Is there any result ?
-        If SQL.ExecuteScalar = 0 Then
+        If ExecuteScalar("SELECT Count(*) FROM users WHERE Nick = @1 AND Identd = @2 AND Host = @3 AND RealName = @4;", User.Nick, User.Identd, TruncateHost(User.Host), User.RealName) = 0 Then
             'Register this user in the database
-            SQL = MySQL.CreateCommand
-            SQL.CommandText = "INSERT INTO users (Nick, Identd, Host, RealName) VALUES (@Nick, @Identd, @Host, @RealName)"
-            SQL.Parameters.AddWithValue("@Nick", User.Nick)
-            SQL.Parameters.AddWithValue("@Identd", User.Identd)
-            SQL.Parameters.AddWithValue("@Host", TruncateHost(User.Host))
-            SQL.Parameters.AddWithValue("@RealName", User.RealName)
-            SQL.ExecuteNonQuery()
+            ExecuteNonQuery("INSERT INTO users (Nick, Identd, Host, RealName) VALUES (@1, @2, @3, @4)", User.Nick, User.Identd, TruncateHost(User.Host), User.RealName)
         End If
 
         'Lookup for all the related entries
-        SQL = MySQL.CreateCommand
-        SQL.CommandText = "SELECT * FROM users WHERE Nick = @Nick OR Identd = @Identd OR Host = @Host OR RealName = @RealName;"
-        SQL.Parameters.AddWithValue("@Nick", User.Nick)
-        SQL.Parameters.AddWithValue("@Identd", User.Identd)
-        SQL.Parameters.AddWithValue("@Host", TruncateHost(User.Host))
-        SQL.Parameters.AddWithValue("@RealName", User.RealName)
-        Result = SQL.ExecuteReader
+        Result = ExecuteReader("SELECT Count(*) FROM users WHERE Nick = @1 AND Identd = @2 AND Host = @3 AND RealName = @4;", User.Nick, User.Identd, TruncateHost(User.Host), User.RealName)
 
         While Result.Read
             'Log the user join
@@ -135,12 +190,10 @@ Public Class IRCBot
 
     Private Sub IRC_OnChannelMessage(ByVal Channel As Channel, ByVal User As User, ByVal Message As String) Handles IRC.OnChannelMessage
 
-        Dim Count As Integer = 0
-        Dim RCount As Integer = 0
-
         Dim Command As String()
 
-        Dim SQL As MySqlCommand = MySQL.CreateCommand
+        Dim Count As Integer = 0
+        Dim RCount As Integer = 0
         Dim Result As MySqlDataReader
 
         'Listen only message from the log channel
@@ -165,13 +218,11 @@ Public Class IRCBot
 
                         If Not String.IsNullOrEmpty(Entry) Then
                             'Cross reference by nick
-                            SQL.CommandText = "SELECT * FROM users WHERE " + Entry + " = @Value"
-                            SQL.Parameters.AddWithValue("@Value", Command(2))
-                            Result = SQL.ExecuteReader
+                            Result = ExecuteReader("SELECT * FROM users WHERE " & Entry & " = @1", Command(2))
 
                             'Dump out the results
                             While Result.Read
-                                Channel.Message("Nick: " + Result("Nick") + " | Mask: " + (Result("Identd") + "@" + Result("Host")) + " | Real Name: " + Result("RealName"))
+                                Channel.Message("Nick: " & Result("Nick") & " | Mask: " & (Result("Identd") & "@" & Result("Host")) & " | Real Name: " & Result("RealName"))
                                 Count += 1
                             End While
 
@@ -193,13 +244,42 @@ Public Class IRCBot
                         Select Case Command(1).ToLower
                             Case "count"
                                 'Nickname entries count
-                                SQL.CommandText = "SELECT Count(*) FROM users"
-                                Count = SQL.ExecuteScalar
-                                Channel.Message("Current nickname entries: " + Count.ToString)
+                                Count = ExecuteScalar("SELECT Count(*) FROM users")
+                                Channel.Message("Current nickname entries: " & Count)
 
                             Case "cleanup"
                                 'Cleanup the database
-                                Channel.Message("*** Cleaning up database")
+                                Channel.Message("*** Cleaning up database ***")
+
+                                'Retrieve all the records
+                                Dim Resultset As DataSet = ExecuteDataSet("SELECT * FROM users")
+                                Dim Row As DataRow
+
+                                For Each Row In Resultset.Tables(0).Rows
+                                    Dim Host As String = Row("Host")
+                                    Dim Truncated As String = TruncateHost(Host)
+
+                                    'Any difference ?
+                                    If (Truncated <> Host) Then
+                                        'Is the truncated entries already exist ?
+                                        If ExecuteScalar("SELECT Count(*) FROM users WHERE Nick = @1 AND Identd = @2 AND Host = @3 AND RealName = @4;", Row("Nick"), Row("Identd"), Truncated, Row("RealName")) = 0 Then
+                                            'Not yet, truncate the host name
+                                            ExecuteNonQuery("UPDATE users SET Host = @1 WHERE `Index` = @2;", Truncated, Row("Index"))
+                                        Else
+                                            'Already exist
+                                            ExecuteNonQuery("DELETE FROM users WHERE `Index` = @1;", Row("Index"))
+                                            Count += 1
+                                        End If
+                                    End If
+                                Next
+
+                                'Report statistics
+                                Channel.Message("Duplicate entries removed: " & Count)
+                                Count = ExecuteScalar("SELECT Count(*) FROM users")
+                                Channel.Message("Current nickname entries: " & Count)
+
+                                'Done
+                                Channel.Message("*** Database is cleaned up ***")
 
                         End Select
 
@@ -216,14 +296,14 @@ Public Class IRCBot
                         Select Case Command(1).ToLower
                             Case "logchannel"
                                 'Log channel
-                                '                                if Command.Length > 2 Then
-                                '                                'Join the new channel
-                                '                                IRC.ChannelPart(LogChannel)
-                                '                                IRC.ChannelJoin(Command(2))
-                                '
-                                '                                'Set
-                                '                                LogChannel = Command(2)
-                                '                                End If
+                                If Command.Length > 2 Then
+                                    'Join the new channel
+                                    IRC.ChannelPart(LogChannel)
+                                    IRC.ChannelJoin(Command(2))
+
+                                    'Set
+                                    LogChannel = Command(2)
+                                End If
 
                                 'Dump the variable
                                 Channel.Message("LogChannel = " + LogChannel)
@@ -242,6 +322,8 @@ Public Class IRCBot
 
     Private Sub IRC_OnConnect(ByVal Server As String) Handles IRC.OnConnect
         'Identify
+        Randomize()
+        IRC.SetNick(Nick + Hex(Int(Rnd() * 1337)))
         IRC.Ghost(Nick, NickPassword)
         IRC.SetNick(Nick)
         IRC.Identify(NickPassword)
