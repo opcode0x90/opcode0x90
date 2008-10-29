@@ -6,6 +6,7 @@
     Delegate Sub _PrintConsole(ByVal Text As String)
     Delegate Sub _Connected(ByVal Server As String)
     Delegate Sub _Disconnected()
+    Delegate Sub _Exception(ByVal ex As Exception)
 
     Private Sub Connected(ByVal Server As String)
         'Connected
@@ -15,18 +16,34 @@
         txtMessage.Enabled = True
         btnSend.Enabled = True
 
+        'Notify
         PrintConsole("Connected to " & Server)
+        NotifyIcon.ShowBalloonTip(5000, "StalkerBot", "Connected to " & Server, ToolTipIcon.Info)
     End Sub
 
     Private Sub Disconnected()
         'Disconnected
         PrintConsole("Disconnected from " & IRC.Server)
+        NotifyIcon.ShowBalloonTip(5000, "StalkerBot", "Disconnected from " & IRC.Server, ToolTipIcon.Warning)
 
         btnConnect.Enabled = True
         btnDisconnect.Enabled = False
 
         txtMessage.Enabled = False
         btnSend.Enabled = False
+    End Sub
+
+    Private Sub ExceptionOccurred(ByVal ex As Exception)
+        'Exception occurred
+        PrintConsole("***** EXCEPTION DUMP BEGIN *****")
+        PrintConsole(ex.Message)
+        PrintConsole(String.Empty)
+        PrintConsole(ex.StackTrace)
+        PrintConsole(String.Empty)
+        PrintConsole("*****  EXCEPTION DUMP END  *****")
+
+        'Notify
+        NotifyIcon.ShowBalloonTip(5000, "StalkerBot", "Exception occurred", ToolTipIcon.Error)
     End Sub
 
     Private Sub PrintConsole(ByVal Text As String)
@@ -107,14 +124,13 @@
         End If
     End Sub
 
-    Private Sub IRCBot_OnException(ByVal ex As System.Exception) Handles IRC.OnException
+    Private Sub IRC_OnException(ByVal ex As System.Exception) Handles IRC.OnException
         'Exception occurred
-        PrintConsole("***** EXCEPTION DUMP BEGIN *****")
-        PrintConsole(ex.Message)
-        PrintConsole(String.Empty)
-        PrintConsole(ex.StackTrace)
-        PrintConsole(String.Empty)
-        PrintConsole("*****  EXCEPTION DUMP END  *****")
+        If InvokeRequired Then
+            'Disconnected from the IRC network
+            Dim callback As _Exception = New _Exception(AddressOf ExceptionOccurred)
+            Invoke(callback, New Object() {ex})
+        End If
     End Sub
 
     Private Sub btnSend_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles btnSend.Click
@@ -123,14 +139,13 @@
         txtMessage.ResetText()
     End Sub
 
-    Private Sub IRCBot_OnException1(ByVal ex As System.Exception) Handles IRCBot.OnException
+    Private Sub IRCBot_OnException(ByVal ex As System.Exception) Handles IRCBot.OnException
         'Exception occurred
-        PrintConsole("***** EXCEPTION DUMP BEGIN *****")
-        PrintConsole(ex.Message)
-        PrintConsole(String.Empty)
-        PrintConsole(ex.StackTrace)
-        PrintConsole(String.Empty)
-        PrintConsole("*****  EXCEPTION DUMP END  *****")
+        If InvokeRequired Then
+            'Disconnected from the IRC network
+            Dim callback As _Exception = New _Exception(AddressOf ExceptionOccurred)
+            Invoke(callback, New Object() {ex})
+        End If
     End Sub
 
     Private Sub IRC_OnRawMessage(ByVal Message As String) Handles IRC.OnRawMessage
@@ -153,6 +168,10 @@
 
     Private Sub btnHide_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles btnHide.Click
         Me.Hide()
+    End Sub
+
+    Private Sub NotifyIcon_DoubleClick(ByVal sender As Object, ByVal e As System.EventArgs) Handles NotifyIcon.DoubleClick
+        Me.Show()
     End Sub
 
 End Class
