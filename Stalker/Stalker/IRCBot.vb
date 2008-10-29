@@ -13,6 +13,8 @@ Public Class IRCBot
     Public Channel As String = "#cef"
     Public LogChannel As String = "#cef-loginfo"
 
+    Private Const MAX_RESULTS As Integer = 10
+
     'MySQL database variables
     Public DataSource As String = "localhost"
     Public Database As String = "ircusers"
@@ -172,7 +174,7 @@ Public Class IRCBot
         End If
 
         'Lookup for all the related entries
-        Result = ExecuteReader("SELECT Count(*) FROM users WHERE Nick = @1 AND Identd = @2 AND Host = @3 AND RealName = @4;", User.Nick, User.Identd, TruncateHost(User.Host), User.RealName)
+        Result = ExecuteReader("SELECT * FROM users WHERE Nick = @1 AND Identd = @2 AND Host = @3 AND RealName = @4;", User.Nick, User.Identd, TruncateHost(User.Host), User.RealName)
 
         While Result.Read
             'Log the user join
@@ -217,12 +219,18 @@ Public Class IRCBot
 
                         If Not String.IsNullOrEmpty(Entry) Then
                             'Cross reference by nick
-                            Result = ExecuteReader("SELECT * FROM users WHERE " & Entry & " LIKE @1", String.Join(" ", Command, 2, Command.Length - 2).Replace("*", "%"))
+                            Result = ExecuteReader("SELECT * FROM users WHERE " & Entry & " LIKE @1 LIMIT " & MAX_RESULTS, String.Join(" ", Command, 2, Command.Length - 2).Replace("*", "%"))
 
                             'Dump out the results
                             While Result.Read
                                 Channel.Message("Nick: " & Result("Nick") & " | Mask: " & (Result("Identd") & "@" & Result("Host")) & " | Real Name: " & Result("RealName"))
                                 Count += 1
+
+                                If Count >= MAX_RESULTS Then
+                                    'Snip
+                                    Channel.Message("*** Excess results truncated ***")
+                                    Exit While
+                                End If
                             End While
 
                             'Is there any result ?
