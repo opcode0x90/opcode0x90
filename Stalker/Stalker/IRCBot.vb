@@ -32,8 +32,8 @@ Public Class IRCBot
 
     Private Function TruncateHost(ByVal Host As String) As String
         'Truncate the host name
-        Host = Regex.Replace(Host, "P2PNET-[A-F0-9]{8}", "P2PNET-XXXXXXXX")
-        Host = Regex.Replace(Host, "[A-F0-9]{8}\.[A-F0-9]{8}\.[A-F0-9]{8}\.IP", "XXXXXXXX.XXXXXXXX.XXXXXXXX.IP")
+        Host = Regex.Replace(Host, "P2PNET-[A-F0-9]{7,8}", "P2PNET-XXXXXXXX")
+        Host = Regex.Replace(Host, "[A-F0-9]{7,8}\.[A-F0-9]{7,8}\.[A-F0-9]{7,8}\.IP", "XXXXXXXX.XXXXXXXX.XXXXXXXX.IP")
 
         'Done
         Return Host
@@ -65,7 +65,7 @@ Public Class IRCBot
             SQL.ExecuteNonQuery()
 
             'Connect to the IRC network
-            IRC.Connect(Network, Port, (Nick + Hex(Rnd())), User)
+            IRC.Connect(Network, Port, (Nick + Hex(Int(Rnd() * 1000))), User)
 
             'Done
             Return True
@@ -81,6 +81,55 @@ Public Class IRCBot
         'Disconnect from the IRC network and database
         IRC.Disconnect()
         MySQL.Close()
+    End Sub
+
+    Private Sub IRC_OnChannelJoin(ByVal Channel As Channel, ByVal User As User) Handles IRC.OnChannelJoin
+
+        Dim SQL As MySqlCommand = MySQL.CreateCommand
+        Dim Result As MySqlDataReader
+
+        Dim Count As Integer = 0
+
+        'Lookup for all the related entries
+        SQL.CommandText = "SELECT Count(*) FROM users WHERE Nick = @Nick AND Identd = @Identd AND Host = @Host AND RealName = @RealName;"
+        SQL.Parameters.AddWithValue("@Nick", User.Nick)
+        SQL.Parameters.AddWithValue("@Identd", User.Identd)
+        SQL.Parameters.AddWithValue("@Host", TruncateHost(User.Host))
+        SQL.Parameters.AddWithValue("@RealName", User.RealName)
+
+        'Is there any result ?
+        If SQL.ExecuteScalar = 0 Then
+            'Register this user in the database
+            SQL = MySQL.CreateCommand
+            SQL.CommandText = "INSERT INTO users (Nick, Identd, Host, RealName) VALUES (@Nick, @Identd, @Host, @RealName)"
+            SQL.Parameters.AddWithValue("@Nick", User.Nick)
+            SQL.Parameters.AddWithValue("@Identd", User.Identd)
+            SQL.Parameters.AddWithValue("@Host", TruncateHost(User.Host))
+            SQL.Parameters.AddWithValue("@RealName", User.RealName)
+            SQL.ExecuteNonQuery()
+        End If
+
+        'Lookup for all the related entries
+        SQL = MySQL.CreateCommand
+        SQL.CommandText = "SELECT * FROM users WHERE Nick = @Nick OR Identd = @Identd OR Host = @Host OR RealName = @RealName;"
+        SQL.Parameters.AddWithValue("@Nick", User.Nick)
+        SQL.Parameters.AddWithValue("@Identd", User.Identd)
+        SQL.Parameters.AddWithValue("@Host", TruncateHost(User.Host))
+        SQL.Parameters.AddWithValue("@RealName", User.RealName)
+        Result = SQL.ExecuteReader
+
+        While Result.Read
+            'Log the user join
+            IRC.Message(LogChannel, "Nick: " + Result("Nick") + " | Mask: " + (Result("Identd") + "@" + Result("Host")) + " | Real Name: " + Result("RealName"))
+            Count += 1
+        End While
+
+        'Formatting
+        IRC.Message(LogChannel, " ")
+
+        'Cleanup
+        Result.Close()
+
     End Sub
 
     Private Sub IRC_OnChannelMessage(ByVal Channel As Channel, ByVal User As User, ByVal Message As String) Handles IRC.OnChannelMessage
@@ -121,7 +170,7 @@ Public Class IRCBot
 
                             'Dump out the results
                             While Result.Read
-                                Channel.Message("Nick: " + Result("Nick") + " | Mask: " + (Result("Identd") + "@" + TruncateHost(Result("Host"))) + " | Real Name: " + Result("RealName"))
+                                Channel.Message("Nick: " + Result("Nick") + " | Mask: " + (Result("Identd") + "@" + Result("Host")) + " | Real Name: " + Result("RealName"))
                                 Count += 1
                             End While
 
@@ -146,6 +195,11 @@ Public Class IRCBot
                                 SQL.CommandText = "SELECT Count(*) FROM users"
                                 Count = SQL.ExecuteScalar
                                 Channel.Message("Current nickname entries: " + Count.ToString)
+
+                            Case "cleanup"
+                                'Cleanup the database
+
+
                         End Select
 
                     Case "quote", "q"
@@ -182,55 +236,6 @@ Public Class IRCBot
                 End Select
             End If
         End If
-
-    End Sub
-
-    Private Sub IRC_OnChannelUserJoin(ByVal Channel As Channel, ByVal User As User) Handles IRC.OnChannelUserJoin
-
-        Dim SQL As MySqlCommand = MySQL.CreateCommand
-        Dim Result As MySqlDataReader
-
-        Dim Count As Integer = 0
-
-        'Lookup for all the related entries
-        SQL.CommandText = "SELECT Count(*) FROM users WHERE Nick = @Nick AND Identd = @Identd AND Host = @Host AND RealName = @RealName;"
-        SQL.Parameters.AddWithValue("@Nick", User.Nick)
-        SQL.Parameters.AddWithValue("@Identd", User.Identd)
-        SQL.Parameters.AddWithValue("@Host", User.Host)
-        SQL.Parameters.AddWithValue("@RealName", User.RealName)
-
-        'Is there any result ?
-        If SQL.ExecuteScalar = 0 Then
-            'Register this user in the database
-            SQL = MySQL.CreateCommand
-            SQL.CommandText = "INSERT INTO users (Nick, Identd, Host, RealName) VALUES (@Nick, @Identd, @Host, @RealName)"
-            SQL.Parameters.AddWithValue("@Nick", User.Nick)
-            SQL.Parameters.AddWithValue("@Identd", User.Identd)
-            SQL.Parameters.AddWithValue("@Host", User.Host)
-            SQL.Parameters.AddWithValue("@RealName", User.RealName)
-            SQL.ExecuteNonQuery()
-        End If
-
-        'Lookup for all the related entries
-        SQL = MySQL.CreateCommand
-        SQL.CommandText = "SELECT * FROM users WHERE Nick = @Nick OR Identd = @Identd OR Host = @Host OR RealName = @RealName;"
-        SQL.Parameters.AddWithValue("@Nick", User.Nick)
-        SQL.Parameters.AddWithValue("@Identd", User.Identd)
-        SQL.Parameters.AddWithValue("@Host", User.Host)
-        SQL.Parameters.AddWithValue("@RealName", User.RealName)
-        Result = SQL.ExecuteReader
-
-        While Result.Read
-            'Log the user join
-            IRC.Message(LogChannel, "Nick: " + Result("Nick") + " | Mask: " + (Result("Identd") + "@" + Result("Host")) + " | Real Name: " + Result("RealName"))
-            Count += 1
-        End While
-
-        'Formatting
-        IRC.Message(LogChannel, " ")
-
-        'Cleanup
-        Result.Close()
 
     End Sub
 
