@@ -57,6 +57,10 @@
             'Print the text to console
             txtConsole.AppendText(Text & vbCrLf)
             txtConsole.SelectionStart = txtConsole.TextLength
+
+            'Dump it to stdout and debug too
+            Console.WriteLine(Text)
+            Debug.Print(Text)
         End If
 
     End Sub
@@ -83,22 +87,12 @@
         IRCBot.Kill()
     End Sub
 
-    Private Sub IRC_OnChannelJoin(ByVal Channel As Channel) Handles IRC.OnChannelJoin
-        'Joined the channel
-        PrintConsole("*** Joined channel " & Channel.Name)
-    End Sub
-
-    Private Sub IRC_OnChannelPart(ByVal Channel As Channel) Handles IRC.OnChannelPart
-        'Left the channel
-        PrintConsole("*** Left channel " & Channel.Name)
-    End Sub
-
-    Private Sub IRC_OnChannelUserJoin(ByVal Channel As Channel, ByVal User As User) Handles IRC.OnChannelUserJoin
+    Private Sub IRC_OnChannelJoin(ByVal Channel As Channel, ByVal User As User) Handles IRC.OnChannelJoin
         'Somebody is on
         PrintConsole("*** User " & User.Nick & " joined the channel " & Channel.Name)
     End Sub
 
-    Private Sub IRC_OnChannelUserPart(ByVal Channel As Channel, ByVal User As User, ByVal Message As String) Handles IRC.OnChannelUserPart
+    Private Sub IRC_OnChannelPart(ByVal Channel As Channel, ByVal User As User, ByVal Message As String) Handles IRC.OnChannelPart
         'Somebody left
         PrintConsole("*** User " & User.Nick & " left the channel " & Channel.Name)
     End Sub
@@ -146,6 +140,21 @@
             Dim callback As _Exception = New _Exception(AddressOf ExceptionOccurred)
             Invoke(callback, New Object() {ex})
         End If
+    End Sub
+
+    Private Sub IRC_OnJoin(ByVal Channel As Channel) Handles IRC.OnJoin
+        'Joined the channel
+        PrintConsole("*** Joined channel " & Channel.Name)
+    End Sub
+
+    Private Sub IRC_OnNickChange(ByVal OldNick As String, ByVal NewNick As String) Handles IRC.OnNickChange
+        'Changed our nick
+        PrintConsole("*** Nick changed from " & OldNick & " to " & NewNick)
+    End Sub
+
+    Private Sub IRC_OnPart(ByVal Channel As Channel) Handles IRC.OnPart
+        'Left the channel
+        PrintConsole("*** Left channel " & Channel.Name)
     End Sub
 
     Private Sub IRC_OnRawMessage(ByVal Message As String) Handles IRC.OnRawMessage

@@ -29,13 +29,14 @@ Public Class IRC
 
     Public Event OnKick(ByVal User As User, ByVal Channel As Channel, ByVal Reason As String)
     Public Event OnCTCP(ByVal User As User, ByVal CTCP As String, ByVal Params As String)
+    Public Event OnJoin(ByVal Channel As Channel)
+    Public Event OnPart(ByVal Channel As Channel)
+    Public Event OnNickChange(ByVal OldNick As String, ByVal NewNick As String)
 
-    Public Event OnChannelJoin(ByVal Channel As Channel)
-    Public Event OnChannelPart(ByVal Channel As Channel)
     Public Event OnChannelKick(ByVal Channel As Channel, ByVal User As User, ByVal Nick As String, ByVal Reason As String)
     Public Event OnChannelMessage(ByVal Channel As Channel, ByVal User As User, ByVal Message As String)
-    Public Event OnChannelUserJoin(ByVal Channel As Channel, ByVal User As User)
-    Public Event OnChannelUserPart(ByVal Channel As Channel, ByVal User As User, ByVal Message As String)
+    Public Event OnChannelJoin(ByVal Channel As Channel, ByVal User As User)
+    Public Event OnChannelPart(ByVal Channel As Channel, ByVal User As User, ByVal Message As String)
 
     Public Event OnRawMessage(ByVal Message As String)
     Public Event OnRawMessageSent(ByVal Message As String)
@@ -194,7 +195,7 @@ Public Class IRC
                     Channel.Sync()
 
                     'Notify
-                    RaiseEvent OnChannelJoin(Channels(Message))
+                    RaiseEvent OnJoin(Channels(Message))
                 Else
                     'User join
                     Channel = Channels(Message)
@@ -208,20 +209,20 @@ Public Class IRC
                     End If
 
                     'Notify
-                    RaiseEvent OnChannelUserJoin(Channel, User)
+                    RaiseEvent OnChannelJoin(Channel, User)
                 End If
 
             Case "PART"
                 If (Header(0) = Mask) Then
                     'We left the channel :(
-                    RaiseEvent OnChannelPart(Channels(Header(2)))
+                    RaiseEvent OnPart(Channels(Header(2)))
                     Channels.Remove(Header(2))
                 Else
                     'User leave
                     Channel = Channels(Header(2))
 
                     'Notify
-                    RaiseEvent OnChannelUserPart(Channel, Channel.Users(Header(0)), Message)
+                    RaiseEvent OnChannelPart(Channel, Channel.Users(Header(0)), Message)
 
                     'Purge the user from our list
                     Channel.Users.Remove(Header(0))
@@ -241,6 +242,9 @@ Public Class IRC
 
             Case "NICK"
                 If (Header(0) = Mask) Then
+                    'Notify
+                    RaiseEvent OnNickChange(Nick, Message)
+
                     'We changed our nick
                     _Mask = Mask.Remove(0, Nick.Length)
                     _Mask = Mask.Insert(0, Message)
