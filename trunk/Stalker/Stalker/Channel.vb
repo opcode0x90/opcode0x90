@@ -39,6 +39,11 @@ Public Class Channel
         IRC.Send("WHO " + Name)
     End Sub
 
+    Public Sub Message(ByVal Message As String)
+        'Say something on the channel
+        IRC.Message(Name, Message)
+    End Sub
+
     Private Sub IRC_OnRawServerAnnounce(ByVal FullHeader As String, ByVal Header() As String, ByVal Message As String) Handles IRC.OnRawServerAnnounce
         'Is this a /WHO list ?
         If Header(1) = "352" And Header(3) = Name Then
