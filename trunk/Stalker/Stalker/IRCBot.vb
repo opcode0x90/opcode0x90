@@ -30,6 +30,15 @@ Public Class IRCBot
     'IRCBot exceptions
     Public Event OnException(ByVal ex As Exception)
 
+    Private Function TruncateHost(ByVal Host As String) As String
+        'Truncate the host name
+        Host = Regex.Replace(Host, "P2PNET-[A-F0-9]{8}", "P2PNET-XXXXXXXX")
+        Host = Regex.Replace(Host, "[A-F0-9]{8}\.[A-F0-9]{8}\.[A-F0-9]{8}\.IP", "XXXXXXXX.XXXXXXXX.XXXXXXXX.IP")
+
+        'Done
+        Return Host
+    End Function
+
     Public Function Start() As Boolean
 
         Try
@@ -112,7 +121,7 @@ Public Class IRCBot
 
                             'Dump out the results
                             While Result.Read
-                                Channel.Message("Nick: " + Result("Nick") + " | Mask: " + (Result("Identd") + "@" + Result("Host")) + " | Real Name: " + Result("RealName"))
+                                Channel.Message("Nick: " + Result("Nick") + " | Mask: " + (Result("Identd") + "@" + TruncateHost(Result("Host"))) + " | Real Name: " + Result("RealName"))
                                 Count += 1
                             End While
 
@@ -193,6 +202,7 @@ Public Class IRCBot
         'Is there any result ?
         If SQL.ExecuteScalar = 0 Then
             'Register this user in the database
+            SQL = MySQL.CreateCommand
             SQL.CommandText = "INSERT INTO users (Nick, Identd, Host, RealName) VALUES (@Nick, @Identd, @Host, @RealName)"
             SQL.Parameters.AddWithValue("@Nick", User.Nick)
             SQL.Parameters.AddWithValue("@Identd", User.Identd)
@@ -202,6 +212,7 @@ Public Class IRCBot
         End If
 
         'Lookup for all the related entries
+        SQL = MySQL.CreateCommand
         SQL.CommandText = "SELECT * FROM users WHERE Nick = @Nick OR Identd = @Identd OR Host = @Host OR RealName = @RealName;"
         SQL.Parameters.AddWithValue("@Nick", User.Nick)
         SQL.Parameters.AddWithValue("@Identd", User.Identd)
