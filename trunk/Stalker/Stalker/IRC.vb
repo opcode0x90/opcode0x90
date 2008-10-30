@@ -179,7 +179,7 @@ Public Class IRC
                         Else
                             'Unknown user
                             User = New User(Me, Header(0))
-                            Channel.Users.Add(Header(0), User)
+                            If Not Channel.Users.ContainsKey(Header(0)) Then Channel.Users.Add(Header(0), User)
                         End If
 
                         RaiseEvent OnChannelMessage(Channel, User, Message)
@@ -228,8 +228,16 @@ Public Class IRC
                     'User leave
                     Channel = Channels(Header(2))
 
+                    If Channel.Users.ContainsKey(Header(0)) Then
+                        User = Channel.Users(Header(0))
+                    Else
+                        'Untracked user
+                        User = New User(Me, Header(0))
+                        If Not Channel.Users.ContainsKey(Header(0)) Then Channel.Users.Add(Header(0), User)
+                    End If
+
                     'Notify
-                    RaiseEvent OnChannelPart(Channel, Channel.Users(Header(0)), Message)
+                    RaiseEvent OnChannelPart(Channel, User, Message)
 
                     'Purge the user from our list
                     Channel.Users.Remove(Header(0))
