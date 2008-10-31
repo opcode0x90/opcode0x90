@@ -14,8 +14,8 @@ Public Class IRCBot
     Public Channel As String = "#cef"
     Public LogChannel As String = "#cef-loginfo"
 
-    Public MaxXrefs As Integer = 3
-    Public MaxResults As Integer = 10
+    Public MaxXrefs As Integer = 10
+    Public MaxResults As Integer = 3
 
     'MySQL database variables
     Public DataSource As String = "localhost"
@@ -431,7 +431,7 @@ Public Class IRCBot
                         'Nick name cross reference
                         If Command.Length < 3 Then
                             'Find help first
-                            User.Notify("Usage: !xref (Nick|Ident|Host|Name) [Value]")
+                            User.Notify("Usage: !xref (Nick|Ident|Host|Name|Mask) [Value]")
                             User.Notify(" ")
                             User.Notify("eg. !xref name Safko")
                             User.Notify("    !xref host *.dyn.optonline.net")
@@ -509,7 +509,7 @@ Public Class IRCBot
                                 'Remove the specified entry from the database
                                 If Command.Length < 3 Then
                                     'l2remove
-                                    User.Notify("Usage: !db remove (Nick|Ident|Host|Name) [Entry]")
+                                    User.Notify("Usage: !db remove (Nick|Ident|Host|Name|Mask) [Entry]")
                                 End If
 
                                 Select Case Command(2).ToLower
@@ -545,6 +545,8 @@ Public Class IRCBot
                             User.Notify(" ")
                             User.Notify("  raw     Send raw text to server")
                             User.Notify("  join    Make the bot join the channel")
+                            User.Notify("  part    Make the bot leave the channel")
+                            User.Notify("  say     Talk crap and brag")
                             User.Notify(" ")
                             Exit Sub
                         End If
@@ -556,8 +558,34 @@ Public Class IRCBot
                                 IRC.Send(String.Join(" ", Command, 2, Command.Length - 2))
 
                             Case "join", "j"
+                                If Command.Length < 3 Then
+                                    'Are you sure you know what youre doing?
+                                    User.Notify("Usage: !quote join [Channel]")
+                                    Exit Sub
+                                End If
+
                                 'Join the specified channel
                                 IRC.ChannelJoin(Command(2))
+
+                            Case "part", "p"
+                                If Command.Length < 3 Then
+                                    'Are you sure you know what youre doing?
+                                    User.Notify("Usage: !quote part [Channel] [Reason]")
+                                    Exit Sub
+                                End If
+
+                                'Leave the specified channel
+                                IRC.ChannelPart(Command(2), String.Join(" ", Command, 3, Command.Length - 3))
+
+                            Case "say", "s"
+                                If Command.Length < 4 Then
+                                    'Are you sure you know what youre doing?
+                                    User.Notify("Usage: !quote say [Channel] [Message]")
+                                    Exit Sub
+                                End If
+
+                                'Say something
+                                IRC.Message(Command(2), String.Join(" ", Command, 3, Command.Length - 3))
 
                         End Select
 
@@ -573,7 +601,7 @@ Public Class IRCBot
                             'Are you sure you know what youre doing?
                             User.Notify("Available !var commands")
                             User.Notify(" ")
-                            User.Notify("  logchannel    Sets current bot log channel")
+                            User.Notify("  logchannel    Sets current bot log channel. Dont change this unless you know what youre doing, you might lock yourself out from the bot")
                             User.Notify("  mask          Displays the bot current mask. For debugging purpose only")
                             User.Notify("  maxresults    Sets the maximum number of results to display when a user joins the channe;")
                             User.Notify("  maxxrefs      Sets the maximum number of results to display on !xrefs command")
