@@ -8,6 +8,7 @@ Public Class IRCBot
     Public Network As String = "irc.p2p-network.net"
     Public Port As Integer = 6667
     Public Nick As String = "noppy"
+    Public Nick2 As String = "_noppy"
     Public NickPassword As String = "seriouslysecurepassword"
     Public User As String = "I r stalker"
     Public Channel As String = "#cef"
@@ -210,7 +211,7 @@ Public Class IRCBot
                             ");")
 
             'Connect to the IRC network
-            IRC.Connect(Network, Port, Nick, User)
+            IRC.Connect(Network, Port, Nick2, User)
 
             'Done
             Return True
@@ -242,16 +243,20 @@ Public Class IRCBot
         End If
 
         'Lookup for all the related entries
-        Result = ExecuteReader("SELECT * FROM users WHERE Nick = @1 OR Identd = @2 OR Host = @3 OR RealName = @4" & IIf(MaxResults > 0, " ORDER BY Index DESC LIMIT " & (MaxResults + 1), String.Empty), User.Nick, User.Identd, (User.Host), User.RealName)
+        Result = ExecuteReader("SELECT * FROM users WHERE Nick = @1 OR Identd = @2 OR Host = @3 OR RealName = @4" & IIf(MaxResults > 0, " ORDER BY `Index` DESC LIMIT " & (MaxResults + 1) & ";", String.Empty), User.Nick, User.Identd, (User.Host), User.RealName)
 
         While Result.Read
+            Dim Nick As String = Result("Nick")
+            Dim Mask As String = (Result("Identd") & "@" & Result("Host"))
+            Dim RealName As String = Result("RealName")
+
             'Log the user join
-            IRC.Message(LogChannel, "Nick: " & Result("Nick") & " | Mask: " & (Result("Identd") & "@" & Result("Host")) & " | Real Name: " & Result("RealName"))
+            IRC.Message(LogChannel, "Nick: " & Nick & Space(Math.Max(15 - Nick.Length, 0)) & " | Mask: " & Mask & Space(Math.Max(45 - Mask.Length, 0)) & " | Real Name: " & RealName)
             Count += 1
 
             If (Count > MaxResults) And (MaxResults > 0) Then
                 'Snip
-                Channel.Message("*** Excess results truncated ***")
+                IRC.Message(LogChannel, "*** Excess results truncated ***")
                 Exit While
             End If
         End While
@@ -410,7 +415,7 @@ Public Class IRCBot
                                     Dim Nick As String = Result("Nick")
                                     Dim Mask As String = Result("Mask")
 
-                                    User.Notify("  " & Count & Space(5 - Count.ToString.Length) & Access & Space(8 - Access.Length) & Nick & Space(15 - Nick.Length) & Mask)
+                                    User.Notify("  " & Count & Space(Math.Max(5 - Count.ToString.Length, 0)) & Access & Space(Math.Max(8 - Access.Length, 0)) & Nick & Space(Math.Max(15 - Nick.Length, 0)) & Mask)
                                 End While
                                 User.Notify("*** End of access list ***")
 
@@ -439,6 +444,7 @@ Public Class IRCBot
                             Case "ident", "i" : Entry = "Identd"
                             Case "host", "h" : Entry = "Host"
                             Case "name", "u" : Entry = "RealName"
+                            Case "mask", "m" : Entry = "CONCAT(Identd, '@', Host)"
                         End Select
 
                         If Not String.IsNullOrEmpty(Entry) Then
@@ -447,7 +453,11 @@ Public Class IRCBot
 
                             'Dump out the results
                             While Result.Read
-                                Channel.Message("Nick: " & Result("Nick") & " | Mask: " & (Result("Identd") & "@" & Result("Host")) & " | Real Name: " & Result("RealName"))
+                                Dim Nick As String = Result("Nick")
+                                Dim Mask As String = (Result("Identd") & "@" & Result("Host"))
+                                Dim RealName As String = Result("RealName")
+
+                                Channel.Message("Nick: " & Nick & Space(Math.Max(15 - Nick.Length, 0)) & " | Mask: " & Mask & Space(Math.Max(45 - Mask.Length, 0)) & " | Real Name: " & RealName)
                                 Count += 1
 
                                 If (Count > MaxXrefs) And (MaxXrefs > 0) Then
@@ -502,20 +512,21 @@ Public Class IRCBot
                                     User.Notify("Usage: !db remove (Nick|Ident|Host|Name) [Entry]")
                                 End If
 
-                                Select Case Command(1).ToLower
+                                Select Case Command(2).ToLower
                                     Case "nick", "n" : Entry = "Nick"
                                     Case "ident", "i" : Entry = "Identd"
                                     Case "host", "h" : Entry = "Host"
                                     Case "name", "u" : Entry = "RealName"
+                                    Case "mask", "m" : Entry = "CONCAT(Identd, '@', Host)"
                                 End Select
 
                                 If Not String.IsNullOrEmpty(Entry) Then
                                     'Report how many entries will be removed
-                                    Count = ExecuteScalar("SELECT Count(*) FROM users WHERE " & Entry & " LIKE @1", String.Join(" ", Command, 2, Command.Length - 2).Replace("*", "%"))
+                                    Count = ExecuteScalar("SELECT Count(*) FROM users WHERE " & Entry & " LIKE @1", String.Join(" ", Command, 3, Command.Length - 3).Replace("*", "%"))
                                     Channel.Message("*** Database entries removed: " & Count)
 
                                     'Now remove it for real
-                                    ExecuteNonQuery("DELETE FROM users WHERE " & Entry & " = @1", String.Join(" ", Command, 2, Command.Length - 2))
+                                    ExecuteNonQuery("DELETE FROM users WHERE " & Entry & " = @1", String.Join(" ", Command, 3, Command.Length - 3))
                                 End If
 
                         End Select
@@ -621,11 +632,7 @@ Public Class IRCBot
     End Sub
 
     Private Sub IRC_OnConnect(ByVal Server As String) Handles IRC.OnConnect
-
-        Dim rnd As Random = New Random
-
         'Identify
-        IRC.SetNick(Nick + Hex(rnd.Next))
         IRC.Ghost(Nick, NickPassword)
         IRC.SetNick(Nick)
         IRC.Identify(NickPassword)
