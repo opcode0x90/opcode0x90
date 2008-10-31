@@ -1,4 +1,5 @@
 ﻿Imports MySql.Data.MySqlClient
+Imports System.Math
 Imports System.Data
 Imports System.Text.RegularExpressions
 
@@ -230,42 +231,45 @@ Public Class IRCBot
     End Sub
 
     Private Sub IRC_OnChannelJoin(ByVal Channel As Channel, ByVal User As User) Handles IRC.OnChannelJoin
+        'Is this the right channel ?
+        If Channel.Name = Me.Channel Then
 
-        Dim SQL As MySqlCommand = MySQL.CreateCommand
-        Dim Result As MySqlDataReader
+            Dim SQL As MySqlCommand = MySQL.CreateCommand
+            Dim Result As MySqlDataReader
 
-        Dim Count As Integer = 0
+            Dim Count As Integer = 0
 
-        'Lookup for all the related entries
-        If ExecuteScalar("SELECT Count(*) FROM users WHERE Nick = @1 AND Identd = @2 AND Host = @3 AND RealName = @4;", User.Nick, User.Identd, (User.Host), User.RealName) = 0 Then
-            'Register this user in the database
-            ExecuteNonQuery("INSERT INTO users (Nick, Identd, Host, RealName) VALUES (@1, @2, @3, @4)", User.Nick, User.Identd, (User.Host), User.RealName)
-        End If
-
-        'Lookup for all the related entries
-        Result = ExecuteReader("SELECT * FROM users WHERE Nick = @1 OR Identd = @2 OR Host = @3 OR RealName = @4" & IIf(MaxResults > 0, " ORDER BY `Index` DESC LIMIT " & (MaxResults + 1) & ";", String.Empty), User.Nick, User.Identd, (User.Host), User.RealName)
-
-        While Result.Read
-            Dim Nick As String = Result("Nick")
-            Dim Mask As String = (Result("Identd") & "@" & Result("Host"))
-            Dim RealName As String = Result("RealName")
-
-            'Log the user join
-            IRC.Message(LogChannel, "Nick: " & Nick & Space(Math.Max(15 - Nick.Length, 0)) & " | Mask: " & Mask & Space(Math.Max(45 - Mask.Length, 0)) & " | Real Name: " & RealName)
-            Count += 1
-
-            If (Count > MaxResults) And (MaxResults > 0) Then
-                'Snip
-                IRC.Message(LogChannel, "*** Excess results truncated ***")
-                Exit While
+            'Lookup for all the related entries
+            If ExecuteScalar("SELECT Count(*) FROM users WHERE Nick = @1 AND Identd = @2 AND Host = @3 AND RealName = @4;", User.Nick, User.Identd, (User.Host), User.RealName) = 0 Then
+                'Register this user in the database
+                ExecuteNonQuery("INSERT INTO users (Nick, Identd, Host, RealName) VALUES (@1, @2, @3, @4)", User.Nick, User.Identd, (User.Host), User.RealName)
             End If
-        End While
 
-        'Formatting
-        IRC.Message(LogChannel, " ")
+            'Lookup for all the related entries
+            Result = ExecuteReader("SELECT * FROM users WHERE Nick = @1 OR Identd = @2 OR Host = @3 OR RealName = @4" & IIf(MaxResults > 0, " ORDER BY `Index` DESC LIMIT " & (MaxResults + 1) & ";", String.Empty), User.Nick, User.Identd, (User.Host), User.RealName)
 
-        'Cleanup
-        Result.Close()
+            While Result.Read
+                Dim Nick As String = Result("Nick")
+                Dim Mask As String = (Result("Identd") & "@" & Result("Host"))
+                Dim RealName As String = Result("RealName")
+
+                'Log the user join
+                Channel.Message("Nick: " & Nick & " | Mask: " & Mask & " | Real Name: " & RealName)
+                Count += 1
+
+                If (Count > MaxResults) And (MaxResults > 0) Then
+                    'Snip
+                    IRC.Message(LogChannel, "*** Excess results truncated ***")
+                    Exit While
+                End If
+            End While
+
+            'Formatting
+            IRC.Message(LogChannel, " ")
+
+            'Cleanup
+            Result.Close()
+        End If
 
     End Sub
 
@@ -415,7 +419,7 @@ Public Class IRCBot
                                     Dim Nick As String = Result("Nick")
                                     Dim Mask As String = Result("Mask")
 
-                                    User.Notify("  " & Count & Space(Math.Max(5 - Count.ToString.Length, 0)) & Access & Space(Math.Max(8 - Access.Length, 0)) & Nick & Space(Math.Max(15 - Nick.Length, 0)) & Mask)
+                                    User.Notify("  " & Count & Space(Max(5 - Count.ToString.Length, 0)) & Access & Space(Max(8 - Access.Length, 0)) & Nick & Space(Max(15 - Nick.Length, 0)) & Mask)
                                 End While
                                 User.Notify("*** End of access list ***")
 
@@ -457,7 +461,7 @@ Public Class IRCBot
                                 Dim Mask As String = (Result("Identd") & "@" & Result("Host"))
                                 Dim RealName As String = Result("RealName")
 
-                                Channel.Message("Nick: " & Nick & Space(Math.Max(15 - Nick.Length, 0)) & " | Mask: " & Mask & Space(Math.Max(45 - Mask.Length, 0)) & " | Real Name: " & RealName)
+                                Channel.Message("Nick: " & Nick & " | Mask: " & Mask & " | Real Name: " & RealName)
                                 Count += 1
 
                                 If (Count > MaxXrefs) And (MaxXrefs > 0) Then
@@ -601,10 +605,10 @@ Public Class IRCBot
                             'Are you sure you know what youre doing?
                             User.Notify("Available !var commands")
                             User.Notify(" ")
-                            User.Notify("  logchannel    Sets current bot log channel. Dont change this unless you know what youre doing, you might lock yourself out from the bot")
-                            User.Notify("  mask          Displays the bot current mask. For debugging purpose only")
-                            User.Notify("  maxresults    Sets the maximum number of results to display when a user joins the channe;")
-                            User.Notify("  maxxrefs      Sets the maximum number of results to display on !xrefs command")
+                            User.Notify("  logchannel     Sets current bot log channel. Dont change this unless you know what youre doing, you might lock yourself out from the bot")
+                            User.Notify("  mask           Displays the bot current mask. For debugging purpose only")
+                            User.Notify("  maxresults     Sets the maximum number of results to display when a user joins the channe;")
+                            User.Notify("  maxxrefs       Sets the maximum number of results to display on !xrefs command")
                             User.Notify(" ")
                             Exit Sub
                         End If
