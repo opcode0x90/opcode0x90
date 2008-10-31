@@ -13,6 +13,7 @@ Public Class IRCBot
     Public Channel As String = "#cef"
     Public LogChannel As String = "#cef-loginfo"
 
+    Public MaxXrefs As Integer = 3
     Public MaxResults As Integer = 10
 
     'MySQL database variables
@@ -241,12 +242,18 @@ Public Class IRCBot
         End If
 
         'Lookup for all the related entries
-        Result = ExecuteReader("SELECT * FROM users WHERE Nick = @1 OR Identd = @2 OR Host = @3 OR RealName = @4;", User.Nick, User.Identd, (User.Host), User.RealName)
+        Result = ExecuteReader("SELECT * FROM users WHERE Nick = @1 OR Identd = @2 OR Host = @3 OR RealName = @4" & IIf(MaxResults > 0, " ORDER BY Index DESC LIMIT " & (MaxResults + 1), String.Empty), User.Nick, User.Identd, (User.Host), User.RealName)
 
         While Result.Read
             'Log the user join
-            IRC.Message(LogChannel, "Nick: " + Result("Nick") + " | Mask: " + (Result("Identd") + "@" + Result("Host")) + " | Real Name: " + Result("RealName"))
+            IRC.Message(LogChannel, "Nick: " & Result("Nick") & " | Mask: " & (Result("Identd") & "@" & Result("Host")) & " | Real Name: " & Result("RealName"))
             Count += 1
+
+            If (Count > MaxResults) And (MaxResults > 0) Then
+                'Snip
+                Channel.Message("*** Excess results truncated ***")
+                Exit While
+            End If
         End While
 
         'Formatting
@@ -436,14 +443,14 @@ Public Class IRCBot
 
                         If Not String.IsNullOrEmpty(Entry) Then
                             'Cross reference by nick
-                            Result = ExecuteReader("SELECT * FROM users WHERE " & Entry & " LIKE @1" & IIf(MaxResults > 0, " LIMIT " & (MaxResults + 1), String.Empty), String.Join(" ", Command, 2, Command.Length - 2).Replace("*", "%"))
+                            Result = ExecuteReader("SELECT * FROM users WHERE " & Entry & " LIKE @1" & IIf(MaxXrefs > 0, " LIMIT " & (MaxXrefs + 1), String.Empty), String.Join(" ", Command, 2, Command.Length - 2).Replace("*", "%"))
 
                             'Dump out the results
                             While Result.Read
                                 Channel.Message("Nick: " & Result("Nick") & " | Mask: " & (Result("Identd") & "@" & Result("Host")) & " | Real Name: " & Result("RealName"))
                                 Count += 1
 
-                                If (Count > MaxResults) And (MaxResults > 0) Then
+                                If (Count > MaxXrefs) And (MaxXrefs > 0) Then
                                     'Snip
                                     Channel.Message("*** Excess results truncated ***")
                                     Exit While
@@ -556,8 +563,9 @@ Public Class IRCBot
                             User.Notify("Available !var commands")
                             User.Notify(" ")
                             User.Notify("  logchannel    Sets current bot log channel")
-                            User.Notify("  mask          Display the bot current mask. For debugging purpose only")
-                            User.Notify("  maxresults    Sets the maximum number of results displayed before it is truncated")
+                            User.Notify("  mask          Displays the bot current mask. For debugging purpose only")
+                            User.Notify("  maxresults    Sets the maximum number of results to display when a user joins the channe;")
+                            User.Notify("  maxxrefs      Sets the maximum number of results to display on !xrefs command")
                             User.Notify(" ")
                             Exit Sub
                         End If
@@ -582,7 +590,7 @@ Public Class IRCBot
                                 Channel.Message("*** Mask = " & IRC.Mask)
 
                             Case "maxresults"
-                                'Max results
+                                'Max results to display when a user join the channel
                                 If Command.Length > 2 Then
                                     If IsNumeric(Command(2)) Then
                                         'Set
@@ -592,6 +600,18 @@ Public Class IRCBot
 
                                 'Dump the variable
                                 Channel.Message("*** MaxResults = " & MaxResults)
+
+                            Case "maxxrefs"
+                                'Max Xrefs results to display
+                                If Command.Length > 2 Then
+                                    If IsNumeric(Command(2)) Then
+                                        'Set
+                                        MaxXrefs = Command(2)
+                                    End If
+                                End If
+
+                                'Dump the variable
+                                Channel.Message("*** MaxXrefs = " & MaxXrefs)
 
                         End Select
                 End Select
