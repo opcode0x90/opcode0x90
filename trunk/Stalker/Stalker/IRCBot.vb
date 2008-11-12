@@ -291,6 +291,10 @@ Public Class IRCBot
                 Command = Message.Remove(0, 1).Split(" ")
 
                 Select Case Command(0).ToLower
+                    Case "crash"
+                        'Crash test
+                        User.Notify(Command(123))
+
                     Case "help", "h"
                         'Help you, help me?
                         User.Notify("Available commands")
@@ -624,12 +628,21 @@ Public Class IRCBot
                             User.Notify("  mask           Displays the bot current mask. For debugging purpose only")
                             User.Notify("  maxresults     Sets the maximum number of results to display when a user joins the channe;")
                             User.Notify("  maxxrefs       Sets the maximum number of results to display on !xrefs command")
+                            User.Notify("  debug          Displays if the debug mode is on or off")
                             User.Notify(" ")
                             Exit Sub
                         End If
 
                         'Bot variables
                         Select Case Command(1).ToLower
+                            Case "debug"
+#If DEBUG Then
+                                'Debug mode on
+                                User.Notify("*** Debug mode on")
+#Else
+                                'No warrenties provided
+                                User.Notify("*** Debug mode off")
+#End If
                             Case "logchannel"
                                 'Log channel
                                 If Command.Length > 2 Then
