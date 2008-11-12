@@ -59,9 +59,12 @@ Public Class IRC
             Catch ex As IOException
                 'Probably disconnected from the network
 
-                'Catch ex As Exception
+#If DEBUG Then
+#Else
+            Catch ex As Exception
                 'Exception occurred
-                '   RaiseEvent OnException(ex)
+                RaiseEvent OnException(ex)
+#End If
 
             End Try
 
