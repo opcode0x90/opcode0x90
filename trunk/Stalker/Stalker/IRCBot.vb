@@ -291,6 +291,21 @@ Public Class IRCBot
                 Command = Message.Remove(0, 1).Split(" ")
 
                 Select Case Command(0).ToLower
+                    Case "help", "h"
+                        'Help you, help me?
+                        User.Notify("Available commands")
+                        User.Notify(" ")
+                        User.Notify("  !xref      Display all the related entries of specified user")
+                        User.Notify("  !access    Access control for bot")
+                        User.Notify("  !db        Database related commands")
+                        User.Notify("  !quote     Make the bot to do something fancy")
+                        User.Notify("  !var       Set/get bot variables")
+                        User.Notify(" ")
+                        User.Notify("Note: shorthand is available for all commands")
+                        User.Notify("      eg. !a   = !access")
+                        User.Notify("          !a l = !access list")
+                        User.Notify(" ")
+
                     Case "access", "a"
                         'Access check
                         If Not AccessCheck(User, "a") Then
@@ -383,26 +398,26 @@ Public Class IRCBot
                                 'Update the nick info
                                 If Command.Length < 5 Then
                                     'Update your own brain
-                                    User.Notify("Usage: !access update (Mask|Access) [Nick] [Value]")
+                                    User.Notify("Usage: !access update [Nick] (Mask|Access) [Value]")
                                     Exit Sub
                                 End If
 
                                 'Does the nick exist ?
-                                If ExecuteScalar("SELECT Count(*) FROM access WHERE Nick = @1", Command(3)) > 0 Then
+                                If ExecuteScalar("SELECT Count(*) FROM access WHERE Nick = @1", Command(2)) > 0 Then
                                     'What is your wish ?
-                                    Select Case Command(2).ToLower
+                                    Select Case Command(3).ToLower
                                         Case "mask", "m" : Entry = "Mask"
                                         Case "access", "a" : Entry = "Access"
                                     End Select
 
                                     'Update
-                                    ExecuteNonQuery("UPDATE access SET " & Entry & " = @1 WHERE Nick = @2", Command(4), Command(3))
+                                    ExecuteNonQuery("UPDATE access SET " & Entry & " = @1 WHERE Nick = @2", Command(4), Command(2))
 
                                     'Done
                                     User.Notify("*** Nick " & Entry.ToLower & " updated")
                                 Else
                                     'No such nick exist
-                                    Channel.Message("*** Nick " & Command(3) & " doesnt exist")
+                                    Channel.Message("*** Nick " & Command(2) & " doesnt exist")
                                 End If
 
                             Case "list", "l"
