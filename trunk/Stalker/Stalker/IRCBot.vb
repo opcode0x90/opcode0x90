@@ -254,7 +254,7 @@ Public Class IRCBot
                 Dim RealName As String = Result("RealName")
 
                 'Log the user join
-                Channel.Message("Nick: " & Nick & " | Mask: " & Mask & " | Real Name: " & RealName)
+                IRC.Message(LogChannel, "Nick: " & Nick & " | Mask: " & Mask & " | Real Name: " & RealName)
                 Count += 1
 
                 If (Count > MaxResults) And (MaxResults > 0) Then
@@ -304,7 +304,7 @@ Public Class IRCBot
                             User.Notify("Available !access commands")
                             User.Notify(" ")
                             User.Notify("  add      Add user to access list")
-                            User.Notify("  remove   Remove user from access list")
+                            User.Notify("  delete   Remove user from access list")
                             User.Notify("  update   Update the user mask/access")
                             User.Notify("  list     List the current access list")
                             User.Notify(" ")
@@ -453,7 +453,7 @@ Public Class IRCBot
 
                         If Not String.IsNullOrEmpty(Entry) Then
                             'Cross reference by nick
-                            Result = ExecuteReader("SELECT * FROM users WHERE " & Entry & " LIKE @1" & IIf(MaxXrefs > 0, " LIMIT " & (MaxXrefs + 1), String.Empty), String.Join(" ", Command, 2, Command.Length - 2).Replace("*", "%"))
+                            Result = ExecuteReader("SELECT * FROM users WHERE " & Entry & " LIKE @1" & IIf(MaxXrefs > 0, " ORDER BY `Index` DESC LIMIT " & (MaxXrefs + 1), String.Empty), String.Join(" ", Command, 2, Command.Length - 2).Replace("*", "%"))
 
                             'Dump out the results
                             While Result.Read
@@ -484,7 +484,7 @@ Public Class IRCBot
                             Result.Close()
                         End If
 
-                    Case "db"
+                    Case "db", "d"
                         'Access check
                         If Not AccessCheck(User, "d") Then
                             'Access denied
