@@ -533,6 +533,7 @@ Public Class IRCBot
                                 If Command.Length < 3 Then
                                     'l2remove
                                     User.Notify("Usage: !db remove (Nick|Ident|Host|Name|Mask) [Entry]")
+                                    Exit Sub
                                 End If
 
                                 Select Case Command(2).ToLower
