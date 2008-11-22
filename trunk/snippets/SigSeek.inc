@@ -46,6 +46,8 @@
 			mov ecx, ebx
 			
 			; move to next byte
+			; (note: written as "add esi, 1" instead of "inc esi"
+			         for better speed)
 			add esi, 1
 			
 		.until (esi == edx)
