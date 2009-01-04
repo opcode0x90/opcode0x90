@@ -30,13 +30,12 @@ Partial Class frmMoniter
         Me.txtConsole = New System.Windows.Forms.TextBox
         Me.btnShutdown = New System.Windows.Forms.Button
         Me.btnHide = New System.Windows.Forms.Button
-        Me.btnConnect = New System.Windows.Forms.Button
-        Me.btnDisconnect = New System.Windows.Forms.Button
         Me.NotifyIcon = New System.Windows.Forms.NotifyIcon(Me.components)
         Me.TrayContextMenu = New System.Windows.Forms.ContextMenuStrip(Me.components)
         Me.ShowToolStripMenuItem = New System.Windows.Forms.ToolStripMenuItem
         Me.ToolStripMenuItem1 = New System.Windows.Forms.ToolStripSeparator
         Me.ShutdownToolStripMenuItem = New System.Windows.Forms.ToolStripMenuItem
+        Me.AutoConnectTimer = New System.Windows.Forms.Timer(Me.components)
         Me.GroupBox1.SuspendLayout()
         Me.TrayContextMenu.SuspendLayout()
         Me.SuspendLayout()
@@ -101,25 +100,6 @@ Partial Class frmMoniter
         Me.btnHide.Text = "Hide"
         Me.btnHide.UseVisualStyleBackColor = True
         '
-        'btnConnect
-        '
-        Me.btnConnect.Location = New System.Drawing.Point(12, 219)
-        Me.btnConnect.Name = "btnConnect"
-        Me.btnConnect.Size = New System.Drawing.Size(75, 23)
-        Me.btnConnect.TabIndex = 5
-        Me.btnConnect.Text = "Connect"
-        Me.btnConnect.UseVisualStyleBackColor = True
-        '
-        'btnDisconnect
-        '
-        Me.btnDisconnect.Enabled = False
-        Me.btnDisconnect.Location = New System.Drawing.Point(93, 219)
-        Me.btnDisconnect.Name = "btnDisconnect"
-        Me.btnDisconnect.Size = New System.Drawing.Size(75, 23)
-        Me.btnDisconnect.TabIndex = 6
-        Me.btnDisconnect.Text = "Disconnect"
-        Me.btnDisconnect.UseVisualStyleBackColor = True
-        '
         'NotifyIcon
         '
         Me.NotifyIcon.ContextMenuStrip = Me.TrayContextMenu
@@ -151,6 +131,11 @@ Partial Class frmMoniter
         Me.ShutdownToolStripMenuItem.Size = New System.Drawing.Size(122, 22)
         Me.ShutdownToolStripMenuItem.Text = "&Shutdown"
         '
+        'AutoConnectTimer
+        '
+        Me.AutoConnectTimer.Enabled = True
+        Me.AutoConnectTimer.Interval = 5000
+        '
         'frmMoniter
         '
         Me.AcceptButton = Me.btnSend
@@ -158,8 +143,6 @@ Partial Class frmMoniter
         Me.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font
         Me.ClientSize = New System.Drawing.Size(529, 253)
         Me.Controls.Add(Me.GroupBox1)
-        Me.Controls.Add(Me.btnDisconnect)
-        Me.Controls.Add(Me.btnConnect)
         Me.Controls.Add(Me.btnHide)
         Me.Controls.Add(Me.btnShutdown)
         Me.FormBorderStyle = System.Windows.Forms.FormBorderStyle.Fixed3D
@@ -178,8 +161,6 @@ Partial Class frmMoniter
     Friend WithEvents txtConsole As System.Windows.Forms.TextBox
     Friend WithEvents btnShutdown As System.Windows.Forms.Button
     Friend WithEvents btnHide As System.Windows.Forms.Button
-    Friend WithEvents btnConnect As System.Windows.Forms.Button
-    Friend WithEvents btnDisconnect As System.Windows.Forms.Button
     Friend WithEvents btnSend As System.Windows.Forms.Button
     Friend WithEvents txtMessage As System.Windows.Forms.TextBox
     Friend WithEvents NotifyIcon As System.Windows.Forms.NotifyIcon
@@ -187,5 +168,6 @@ Partial Class frmMoniter
     Friend WithEvents ShowToolStripMenuItem As System.Windows.Forms.ToolStripMenuItem
     Friend WithEvents ToolStripMenuItem1 As System.Windows.Forms.ToolStripSeparator
     Friend WithEvents ShutdownToolStripMenuItem As System.Windows.Forms.ToolStripMenuItem
+    Friend WithEvents AutoConnectTimer As System.Windows.Forms.Timer
 
 End Class

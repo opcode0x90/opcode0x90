@@ -308,6 +308,12 @@ Public Class IRC
         End Get
     End Property
 
+    Public ReadOnly Property Connected() As Boolean
+        Get
+            Return (Not Socket Is Nothing) AndAlso Socket.Connected
+        End Get
+    End Property
+
     Public Sub Poll()
         'Poll for message from the IRC network
         IrcMessagePoll()

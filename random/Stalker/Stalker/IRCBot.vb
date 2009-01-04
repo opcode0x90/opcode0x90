@@ -186,30 +186,32 @@ Public Class IRCBot
     Public Function Start() As Boolean
 
         Try
-            'Connect to localhost MySQL database
-            MySQL.Open()
+            If MySQL.State <> ConnectionState.Open Then
+                'Connect to localhost MySQL database
+                MySQL.Open()
 
-            'Create our database
-            ExecuteNonQuery("CREATE DATABASE IF NOT EXISTS " + Database + ";")
-            MySQL.ChangeDatabase(Database)
+                'Create our database
+                ExecuteNonQuery("CREATE DATABASE IF NOT EXISTS " + Database + ";")
+                MySQL.ChangeDatabase(Database)
 
-            'Generate the layout for our database
-            ExecuteNonQuery("CREATE TABLE IF NOT EXISTS `users` (" + _
-                                "`Index` INTEGER UNSIGNED NOT NULL AUTO_INCREMENT," + _
-                                "`Nick` VARCHAR(45) NOT NULL," + _
-                                "`Identd` VARCHAR(45) NOT NULL," + _
-                                "`Host` VARCHAR(200) NOT NULL," + _
-                                "`RealName` VARCHAR(45) NOT NULL," + _
-                                "PRIMARY KEY (`Index`)" + _
-                            ");")
+                'Generate the layout for our database
+                ExecuteNonQuery("CREATE TABLE IF NOT EXISTS `users` (" + _
+                                    "`Index` INTEGER UNSIGNED NOT NULL AUTO_INCREMENT," + _
+                                    "`Nick` VARCHAR(45) NOT NULL," + _
+                                    "`Identd` VARCHAR(45) NOT NULL," + _
+                                    "`Host` VARCHAR(200) NOT NULL," + _
+                                    "`RealName` VARCHAR(45) NOT NULL," + _
+                                    "PRIMARY KEY (`Index`)" + _
+                                ");")
 
-            ExecuteNonQuery("CREATE TABLE IF NOT EXISTS `access` (" + _
-                                "`Index` INTEGER UNSIGNED NOT NULL AUTO_INCREMENT," + _
-                                "`Nick` VARCHAR(45) NOT NULL," + _
-                                "`Mask` VARCHAR(200) NOT NULL," + _
-                                "`Access` CHAR(23) NOT NULL," + _
-                                "PRIMARY KEY (`Index`)" + _
-                            ");")
+                ExecuteNonQuery("CREATE TABLE IF NOT EXISTS `access` (" + _
+                                    "`Index` INTEGER UNSIGNED NOT NULL AUTO_INCREMENT," + _
+                                    "`Nick` VARCHAR(45) NOT NULL," + _
+                                    "`Mask` VARCHAR(200) NOT NULL," + _
+                                    "`Access` CHAR(23) NOT NULL," + _
+                                    "PRIMARY KEY (`Index`)" + _
+                                ");")
+            End If
 
             'Connect to the IRC network
             IRC.Connect(Network, Port, Nick2, User)
@@ -472,7 +474,7 @@ Public Class IRCBot
 
                         If Not String.IsNullOrEmpty(Entry) Then
                             'Cross reference by nick
-                            Result = ExecuteReader("SELECT * FROM users WHERE " & Entry & " LIKE @1" & IIf(MaxXrefs > 0, " ORDER BY `Index` DESC LIMIT " & (MaxXrefs + 1), String.Empty), String.Join(" ", Command, 2, Command.Length - 2).Replace("*", "%"))
+                            Result = ExecuteReader("SELECT * FROM users WHERE " & Entry & " LIKE @1" & IIf(MaxXrefs > 0, " ORDER BY `Index` DESC LIMIT " & (MaxXrefs + 1), String.Empty), String.Join(" ", Command, 2, Command.Length - 2).Replace("*", "%").TrimEnd)
 
                             'Dump out the results
                             While Result.Read
@@ -546,7 +548,7 @@ Public Class IRCBot
 
                                 If Not String.IsNullOrEmpty(Entry) Then
                                     'Report how many entries will be removed
-                                    Count = ExecuteScalar("SELECT Count(*) FROM users WHERE " & Entry & " LIKE @1", String.Join(" ", Command, 3, Command.Length - 3).Replace("*", "%"))
+                                    Count = ExecuteScalar("SELECT Count(*) FROM users WHERE " & Entry & " LIKE @1", String.Join(" ", Command, 3, Command.Length - 3).Replace("*", "%").TrimEnd)
                                     Channel.Message("*** Database entries removed: " & Count)
 
                                     'Now remove it for real
