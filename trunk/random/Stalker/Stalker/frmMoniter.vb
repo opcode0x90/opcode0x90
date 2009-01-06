@@ -174,4 +174,9 @@
         IRCBot.Start()
     End Sub
 
+    Private Sub btnRestart_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles btnRestart.Click
+        'Restart the bot
+        Application.Restart()
+    End Sub
+
 End Class
