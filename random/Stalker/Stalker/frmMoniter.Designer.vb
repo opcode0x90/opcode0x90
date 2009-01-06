@@ -36,6 +36,7 @@ Partial Class frmMoniter
         Me.ToolStripMenuItem1 = New System.Windows.Forms.ToolStripSeparator
         Me.ShutdownToolStripMenuItem = New System.Windows.Forms.ToolStripMenuItem
         Me.AutoConnectTimer = New System.Windows.Forms.Timer(Me.components)
+        Me.btnRestart = New System.Windows.Forms.Button
         Me.GroupBox1.SuspendLayout()
         Me.TrayContextMenu.SuspendLayout()
         Me.SuspendLayout()
@@ -136,12 +137,22 @@ Partial Class frmMoniter
         Me.AutoConnectTimer.Enabled = True
         Me.AutoConnectTimer.Interval = 5000
         '
+        'btnRestart
+        '
+        Me.btnRestart.Location = New System.Drawing.Point(12, 219)
+        Me.btnRestart.Name = "btnRestart"
+        Me.btnRestart.Size = New System.Drawing.Size(75, 23)
+        Me.btnRestart.TabIndex = 5
+        Me.btnRestart.Text = "Restart"
+        Me.btnRestart.UseVisualStyleBackColor = True
+        '
         'frmMoniter
         '
         Me.AcceptButton = Me.btnSend
         Me.AutoScaleDimensions = New System.Drawing.SizeF(6.0!, 13.0!)
         Me.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font
         Me.ClientSize = New System.Drawing.Size(529, 253)
+        Me.Controls.Add(Me.btnRestart)
         Me.Controls.Add(Me.GroupBox1)
         Me.Controls.Add(Me.btnHide)
         Me.Controls.Add(Me.btnShutdown)
@@ -169,5 +180,6 @@ Partial Class frmMoniter
     Friend WithEvents ToolStripMenuItem1 As System.Windows.Forms.ToolStripSeparator
     Friend WithEvents ShutdownToolStripMenuItem As System.Windows.Forms.ToolStripMenuItem
     Friend WithEvents AutoConnectTimer As System.Windows.Forms.Timer
+    Friend WithEvents btnRestart As System.Windows.Forms.Button
 
 End Class

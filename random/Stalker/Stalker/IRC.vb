@@ -327,6 +327,7 @@ Public Class IRC
         Try
             'Connect to the specified network
             Socket = New TcpClient(Server, Port)
+            Socket.Client.SetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.KeepAlive, 1)
             Stream = Socket.GetStream()
 
             'Initialize all the stream reader and writer
