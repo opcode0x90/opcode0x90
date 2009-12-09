@@ -48,7 +48,6 @@ hlds_client::tick_type hlds_client::ping(const float& timeout /* = 3.0 */)
 	using boost::posix_time::microsec_clock;
 
 	bool timedout = false;
-	bool received = false;
 
 	boost::array<char, 19> recv_buffer;
 
@@ -68,13 +67,13 @@ hlds_client::tick_type hlds_client::ping(const float& timeout /* = 3.0 */)
 	socket.send_to(boost::asio::buffer(A2A_PING), receiver_endpoint);
 
 	// prepare the timeout timer
-	timeout_timer.expires_from_now(boost::posix_time::millisec(timeout*1000)); 
+	timeout_timer.expires_from_now(boost::posix_time::millisec((boost::int64_t)timeout*1000));
 	timeout_timer.async_wait(
 		boost::bind(
 			&hlds_client::__ping_handle_timeout, this,
 				_1,
-				boost::ref(timedout))); 
-	
+				boost::ref(timedout)));
+
 	// now wait for hlds to reply
 	socket.async_receive_from(
 		boost::asio::buffer(recv_buffer), sender_endpoint,
@@ -89,7 +88,7 @@ hlds_client::tick_type hlds_client::ping(const float& timeout /* = 3.0 */)
 	if (timedout)
 	{
 		// request timed out
-		throw std::exception("Request timed out");
+		throw std::runtime_error("Request timed out");
 	}
 	// is this a valid reply ?
 	else if (A2A_PING_REPLY !=
@@ -98,7 +97,7 @@ hlds_client::tick_type hlds_client::ping(const float& timeout /* = 3.0 */)
 			recv_buffer.begin() + A2A_PING_REPLY.size()))
 	{
 		// invalid or corrupted reply
-		throw std::exception("Invalid or corrupted reply");
+		throw std::runtime_error("Invalid or corrupted reply");
 	}
 	else
 	{
